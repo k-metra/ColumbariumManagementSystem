@@ -1,9 +1,11 @@
 import Icon from "../icon";
 
 import { useState, useEffect } from "react"; 
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function LoginForm() {
     const [credentials, setCredentials] = useState({username: "", password: ""});
+    const { setUsername, setAuthenticated, setToken } = useAuth();
     const [error, setError] = useState("");
 
     useEffect(() => {

@@ -16,9 +16,11 @@ export default function DashboardPage() {
     const [elements, setElements] = useState([])
     
     useEffect(() => {
-        setElements([
+        /*setElements([
             { id: 1, payer: "John Doe", amountPaid: 5000, balance: 5000, datePaid: "2024-06-01", status: "Completed" },
-        ])
+        ])*/
+       console.log("Startup");
+       
     }, [])
 
     const handleTabSelect = (e) => {
