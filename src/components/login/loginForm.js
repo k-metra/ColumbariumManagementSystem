@@ -1,17 +1,34 @@
+import Icon from "../icon";
+
+import { useState, useEffect } from "react"; 
+
 export default function LoginForm() {
+    const [credentials, setCredentials] = useState({username: "", password: ""});
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        setError("");
+    }, [credentials])
+
+    function onSubmit(e) {
+        e.preventDefault();
+    }
+
     return (
         <div className="p-6 m-2 border rounded-md min-w-12 min-h-12 shadow-md bg-white">
-            <div className="text-2xl font-bold mb-4 text-center">Admin Login</div>
-            <form className="flex flex-col gap-4">
+            <div className="text-2xl font-bold mb-4 text-[rgb(60,60,60)] text-center">Admin Login</div>
+            <form onSubmit={onSubmit} className="flex flex-col gap-4">
+                { error !== "" && <span className="text-md text-red-400 text-center">{error}</span>}
                 <div id="field">
                     <label className="block mb-1 text-sm text-zinc-600 " htmlFor="username">Username</label>
-                    <input className="w-full p-2 border rounded-md " type="text" id="username" name="username" placeholder="Enter your username" required />
+                    <input onChange={(e) => {setCredentials({...credentials, username: e.target.value})}} className="w-full outline-none p-2 border rounded-md transition-all duration-300 ease-out shadow-inner hover:shadow-transparent focus:shadow-transparent focus:outline-blue-500" type="text" id="username" name="username" placeholder="Enter your username" required />
                 </div>
                 <div id="field">
                     <label className="block mb-1 text-sm text-zinc-600 " htmlFor="password">Password</label>
-                    <input className="w-full p-2 border rounded-md " type="password" id="password" name="password" placeholder="Enter your password" required />
+                    <input onChange={(e) => {setCredentials({...credentials, password: e.target.value})}} className="w-full outline-none p-2 border rounded-md transition-all duration-300 ease-out shadow-inner hover:shadow-transparent focus:shadow-transparent focus:outline-blue-500" type="password" id="password" name="password" placeholder="Enter your password" required />
                 </div>
-                <button className="w-full p-2 bg-blue-500 text-white rounded-md  hover:bg-blue-600" type="submit">Login</button>
+                <button className="w-full drop-shadow-md p-2 bg-blue-500 text-white rounded-md transition-all duration-200 ease-out  hover:bg-blue-600 hover:-translate-y-1" type="submit">
+                    Login <Icon icon="fa-solid fa-arrow-right" className="inline ml-1" /> </button>
             </form>
         </div>
     )
