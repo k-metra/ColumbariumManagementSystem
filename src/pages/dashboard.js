@@ -3,8 +3,8 @@ import Icon from "../components/icon";
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import StatusTag from '../components/dashboard/statusTag';
-
 import Table from '../components/dashboard/table';
+import TabContent from '../components/dashboard/tabContent';
 
 export default function DashboardPage() {
     const { authenticated, username, setUsername } = useAuth();
@@ -26,7 +26,8 @@ export default function DashboardPage() {
         console.log(e.target.innerText);
 
         setSelectedElements([]);
-        setElements([]); // Clear current payments when switching tabs
+        setElements([]); // Clear current items when switching tabs
+        setSearchQuery("");
     }
 
     const handleSelectRow = (id) => {
@@ -75,47 +76,70 @@ export default function DashboardPage() {
                     {/* Main Content */}
                     <div className="content transition-all duration-300 ease-out bg-white w-full h-full flex flex-col mt-3 rounded-lg p-4 drop-shadow-md">
 
-                        {/* Payments Tab */}
-                        {selectedTab === "Payments" && 
-                        <div className="w-full h-full flex flex-col">
-                            <h2 className="text-2xl ml-2 font-bold text-zinc-700">{selectedTab}</h2>
-                            <input onChange={(e) => setSearchQuery(e.target.value)} id="search" className="bg-slate-50 border border-black/10 rounded-lg self-center h-12 w-[60%] text-zinc-700 outline-none px-3" placeholder="Search..."></input>
-                            <div className="flex flex-row gap-2 self-center items-center justify-center border-b border-black/12 py-3 px-10 pt-4 mb-6">
-                                <button className="rounded-lg bg-blue-500 text-white p-2 px-4 hover:bg-blue-600 transition-all duration-300 ease-out">
-                                    <Icon icon="fa-solid fa-plus" className="mr-2"></Icon>
-                                    Add Payment
-                                </button>
-                                <button className="rounded-lg bg-[#fbfbfb] border-black/8 border p-2 px-4 hover:bg-[#f2f2f2] text-zinc-700 transition-all duration-300 ease-out">
-                                    <Icon icon="fa-solid fa-pencil" className="mr-2"></Icon>
-                                    Edit Selected
-                                </button>
-                                <button className="rounded-lg bg-red-500 text-white p-2 px-4 hover:bg-red-600 transition-all duration-300 ease-out">
-                                    <Icon icon="fa fa-trash" className="mr-2"></Icon>
-                                    ({selectedElements.length}) Remove Selected
-                                </button>
-                            </div>
+                        {/* Dynamic Tab Content rendered from a small config to keep things DRY */}
+                        {(() => {
+                            const tabs = {
+                                Payments: {
+                                    columns: ["", "Payment ID", "Payer Name", "Amount Paid", "Balance", "Date Paid", "Status"],
+                                    toolbarButtons: [
+                                        { label: 'Add Payment', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => {} },
+                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: () => {} },
+                                        { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: () => {} },
+                                    ],
+                                    rowRenderer: (row) => (
+                                        <>
+                                            <td className="p-2">#{row.id.toString().padStart(3, "0")}</td>
+                                            <td className="p-2">{row.payer}</td>
+                                            <td className="p-2">₱ {row.amountPaid.toLocaleString("en-US", {minimumFractionDigits: 2 })}</td>
+                                            <td className="p-2">₱ {row.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                                            <td className="p-2">{row.datePaid}</td>
+                                            <td className="p-2"><StatusTag status={row.status} />
+                                    </td>
+                                        </>
+                                    )
+                                },
+                                Contacts: {
+                                    columns: ["", "Contact ID", "Family Name", "Deceased's Name", "Deceased Date", "Contact Number"],
+                                    toolbarButtons: [
+                                        { label: 'Add Contact', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => {} },
+                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: () => {} },
+                                        { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', textClass:'text-white', bg: 'bg-red-500 text-white', onClick: () => {} },
+                                    ],
+                                    rowRenderer: (row) => (
+                                        <>
+                                            <td className="p-2">#{row.id.toString().padStart(3, "0")}</td>
+                                            <td className="p-2">{row.payer}</td>
+                                            <td className="p-2">₱ {row.amountPaid.toLocaleString("en-US", {minimumFractionDigits: 2 })}</td>
+                                            <td className="p-2">₱ {row.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                                            <td className="p-2">{row.datePaid}</td>
+                                            <td className="p-2"><StatusTag status={row.status} />
+                                    </td>
+                                        </>
+                                    )
+                                },
+                                // Add other tabs like Occupants, Niches, Reports to this object when needed.
+                            }
 
-                            <Table 
-                            columns={["", "Payment ID", "Payer Name", "Amount Paid", "Balance", "Date Paid", "Status"]}
-                            data={elements}
-                            selectedItems={selectedElements}
-                            onSelectAll={handleSelectAll}
-                            onSelectRow={handleSelectRow}
-                            getRowKey={(row) => row.id}>
-                                {(row) => (
-                                    <>
-                                        <td className="p-2">#{row.id.toString().padStart(3, "0")}</td>
-                                        <td className="p-2">{row.payer}</td>
-                                        <td className="p-2">₱ {row.amountPaid.toLocaleString("en-US", {minimumFractionDigits: 2 })}</td>
-                                        <td className="p-2">₱ {row.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                                        <td className="p-2">{row.datePaid}</td>
-                                        <td className="p-2"><StatusTag status={row.status} />
-                                </td>
-                                    </>
-                                )}
-                            
-                            </Table>
-                        </div>}
+                            const cfg = tabs[selectedTab];
+                            if (!cfg) return null;
+
+                            return (
+                                <TabContent
+                                    title={selectedTab}
+                                    searchQuery={searchQuery}
+                                    onSearchChange={setSearchQuery}
+                                    toolbarButtons={cfg.toolbarButtons}
+                                    columns={cfg.columns}
+                                    data={elements}
+                                    selectedItems={selectedElements}
+                                    onSelectAll={handleSelectAll}
+                                    onSelectRow={handleSelectRow}
+                                    getRowKey={(row) => row.id}
+                                >
+                                    {cfg.rowRenderer}
+                                </TabContent>
+                            )
+                        })()}
                     </div>
                 </div>
             </div>
