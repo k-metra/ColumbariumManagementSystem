@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import StatusTag from '../components/dashboard/statusTag';
 
+import Table from '../components/dashboard/table';
+
 export default function DashboardPage() {
     const { authenticated, username, setUsername } = useAuth();
     const [selectedTab, setSelectedTab] = useState("Payments");
@@ -11,7 +13,33 @@ export default function DashboardPage() {
     const [searchQuery, setSearchQuery] = useState("");
 
     const [selectedPayments, setSelectedPayments] = useState([]);
+    const [payments, setPayments] = useState([])
     
+    useEffect(() => {
+        setPayments([
+            { id: 1, payer: "John Doe", amountPaid: 5000, balance: 5000, datePaid: "2024-06-01", status: "Completed" },
+        ])
+    }, [])
+
+    const handleTabSelect = (e) => {
+        setSelectedTab(e.target.innerText);
+        console.log(e.target.innerText);
+
+        setSelectedPayments([]);
+        setPayments([]); // Clear current payments when switching tabs
+    }
+
+    const handleSelectRow = (id) => {
+        setSelectedPayments((prev) => 
+            prev.includes(id) ? prev.filter((ppid) => ppid !== id) : [...prev, id]
+        )
+    }
+    
+    const handleSelectAll = (checked) => {
+        if (checked) setSelectedPayments(payments.map((p) => p.id));
+        else setSelectedPayments([]);
+    }
+
     return (
         <div className="h-screen w-screen items-center flex flex-col bg-[#fbfbfb]">
             <div className="w-[90%] h-[80%]">
@@ -31,15 +59,15 @@ export default function DashboardPage() {
                     <div className="sidebar bg-white w-[18%] h-full self-start flex flex-col mt-3 rounded-lg p-4 drop-shadow-md gap-1">
 
                         {/* Tabs */}
-                        <button onClick={(e) => setSelectedTab(e.target.innerText)} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-credit-card" className="mr-3"></Icon>Payments</button>
+                        <button onClick={handleTabSelect} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-credit-card" className="mr-3"></Icon>Payments</button>
 
-                        <button onClick={(e) => setSelectedTab(e.target.innerText)} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-address-book" className="mr-3"></Icon>Contacts</button>
+                        <button onClick={handleTabSelect} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-address-book" className="mr-3"></Icon>Contacts</button>
 
-                        <button onClick={(e) => setSelectedTab(e.target.innerText)} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-box-open" className="mr-3"></Icon>Occupants</button>
+                        <button onClick={handleTabSelect} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-box-open" className="mr-3"></Icon>Occupants</button>
 
-                        <button onClick={(e) => setSelectedTab(e.target.innerText)} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-square-person-confined" className="mr-3"></Icon>Niches</button>
+                        <button onClick={handleTabSelect} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-square-person-confined" className="mr-3"></Icon>Niches</button>
 
-                        <button onClick={(e) => setSelectedTab(e.target.innerText)} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-comments" className="mr-3"></Icon>Report</button>
+                        <button onClick={handleTabSelect} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-comments" className="mr-3"></Icon>Report</button>
                     </div>}
 
                     
@@ -66,30 +94,26 @@ export default function DashboardPage() {
                                 </button>
                             </div>
 
-                            <table>
-                                <thead>
-                                    <tr className="text-left border-b border-black/10 text-zinc-700">
-                                        <th className="p-2 pl-4"><input type="checkbox" /></th>
-                                        <th className="p-2">Payment ID</th>
-                                        <th className="p-2">Contact Name</th>
-                                        <th className="p-2">Amount Due</th>
-                                        <th className="p-2">Amount Paid</th>
-                                        <th className="p-2">Date</th>
-                                        <th className="p-2">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr className="border-b even:bg-[#fafafa] even:hover:bg-black/10 border-black/10 hover:bg-black/5 text-zinc-700">
-                                        <td className="p-2 py-4 pl-4"><input type="checkbox" /></td>
-                                        <td className="p-2">#001</td>
-                                        <td className="p-2">John Doe</td>
-                                        <td className="p-2">₱ 5,000.00</td>
-                                        <td className="p-2">₱ 5,000.00</td>
-                                        <td className="p-2">2024-06-01</td>
-                                        <td className="p-2"><StatusTag status="Completed" /></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <Table 
+                            columns={["", "Payment ID", "Payer Name", "Amount Paid", "Balance", "Date Paid", "Status"]}
+                            data={payments}
+                            selectedItems={selectedPayments}
+                            onSelectAll={handleSelectAll}
+                            onSelectRow={handleSelectRow}
+                            getRowKey={(row) => row.id}>
+                                {(row) => (
+                                    <>
+                                        <td className="p-2">#{row.id.toString().padStart(3, "0")}</td>
+                                        <td className="p-2">{row.payer}</td>
+                                        <td className="p-2">₱ {row.amountPaid.toLocaleString("en-US", {minimumFractionDigits: 2 })}</td>
+                                        <td className="p-2">₱ {row.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                                        <td className="p-2">{row.datePaid}</td>
+                                        <td className="p-2"><StatusTag status={row.status} />
+                                </td>
+                                    </>
+                                )}
+                            
+                            </Table>
                         </div>}
                     </div>
                 </div>
