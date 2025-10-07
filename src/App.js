@@ -46,19 +46,10 @@ function App() {
             </AuthProvider>
           } />
 
-          <Route path="/register/" element ={
-            <AuthProvider>
-              <AuthRoute>
-                <RegisterPage />
-              </AuthRoute>
-            </AuthProvider>
-          } />
 
           <Route path="/dashboard/" element = {
             <AuthProvider>
-              <PrivateRoute>
                 <DashboardPage />
-              </PrivateRoute>
             </AuthProvider>
           } />
         </Routes>
