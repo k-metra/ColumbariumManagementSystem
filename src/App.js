@@ -1,23 +1,68 @@
-import logo from './logo.svg';
+
 import './App.css';
+
+import { useNavigate, BrowserRouter, Routes, Route} from 'react-router-dom'
+import { useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+
+/* Pages */
+import LoginPage from './pages/login';
+import RegisterPage from './pages/register';
+import DashboardPage from './pages/dashboard';
+/* */
+
+
+const PublicRoute = ({ children }) => {
+  return children;
+}
+
+const PrivateRoute = ({ children }) => {
+  const { authenticated } = useAuth();
+
+}
+
+const AuthRoute = ({ children }) => {
+  const { authenticated } = useAuth();
+
+  return !authenticated ? children : <p>No</p>
+}
 
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <BrowserRouter>
+        <Routes>
+          <Route path="" element={
+              <PublicRoute>
+                hi
+              </PublicRoute>
+          } ></Route>
+
+          <Route path="/login/" element ={
+            <AuthProvider>
+              <AuthRoute>
+                <LoginPage />
+              </AuthRoute>
+            </AuthProvider>
+          } />
+
+          <Route path="/register/" element ={
+            <AuthProvider>
+              <AuthRoute>
+                <RegisterPage />
+              </AuthRoute>
+            </AuthProvider>
+          } />
+
+          <Route path="/dashboard/" element = {
+            <AuthProvider>
+              <PrivateRoute>
+                <DashboardPage />
+              </PrivateRoute>
+            </AuthProvider>
+          } />
+        </Routes>
+      </BrowserRouter>
     </div>
   );
 }
