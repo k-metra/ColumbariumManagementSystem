@@ -117,7 +117,37 @@ export default function DashboardPage() {
                                         </>
                                     )
                                 },
-                                // Add other tabs like Occupants, Niches, Reports to this object when needed.
+                                Occupants: {
+                                    columns: ["", "Occupant ID", "Name", "Date of Interment"],
+                                    toolbarButtons: [
+                                        { label: 'Add Occupant', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => {} },
+                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: () => {} },
+                                        { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: () => {} },
+                                    ],
+                                    rowRenderer: (row) => (
+                                        <>
+                                            <td className="p-2">#{row.id.toString().padStart(3, "0")}</td>
+                                            <td className="p-2">{row.name}</td>
+                                            <td className="p-2">{row.dateOfInterment}</td>
+                                        </>
+                                    )   
+                                },
+                                Niches: {
+                                    columns: ["", "Niche ID", "Deceased's Name", "Location", "Status"],
+                                    toolbarButtons: [
+                                        { label: 'Add Niche', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => {} },
+                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: () => {} },
+                                        { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: () => {} },
+                                    ],
+                                    rowRenderer: (row) => (
+                                        <>
+                                            <td className="p-2">#{row.id.toString().padStart(3, "0")}</td>
+                                            <td className="p-2">{row.name}</td>
+                                            <td className="p-2">{row.dateOfInterment}</td>
+                                        </>
+                                    )
+                                }
+                                // Add other tabs here
                             }
 
                             const cfg = tabs[selectedTab];
