@@ -12,11 +12,11 @@ export default function DashboardPage() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
 
-    const [selectedPayments, setSelectedPayments] = useState([]);
-    const [payments, setPayments] = useState([])
+    const [selectedElements, setSelectedElements] = useState([]);
+    const [elements, setElements] = useState([])
     
     useEffect(() => {
-        setPayments([
+        setElements([
             { id: 1, payer: "John Doe", amountPaid: 5000, balance: 5000, datePaid: "2024-06-01", status: "Completed" },
         ])
     }, [])
@@ -25,23 +25,24 @@ export default function DashboardPage() {
         setSelectedTab(e.target.innerText);
         console.log(e.target.innerText);
 
-        setSelectedPayments([]);
-        setPayments([]); // Clear current payments when switching tabs
+        setSelectedElements([]);
+        setElements([]); // Clear current payments when switching tabs
     }
 
     const handleSelectRow = (id) => {
-        setSelectedPayments((prev) => 
+        setSelectedElements((prev) => 
             prev.includes(id) ? prev.filter((ppid) => ppid !== id) : [...prev, id]
         )
     }
     
     const handleSelectAll = (checked) => {
-        if (checked) setSelectedPayments(payments.map((p) => p.id));
-        else setSelectedPayments([]);
+        if (checked) setSelectedElements(elements.map((p) => p.id));
+        else setSelectedElements([]);
     }
 
     return (
         <div className="h-screen w-screen items-center flex flex-col bg-[#fbfbfb]">
+            <title>Dashboard</title>
             <div className="w-[90%] h-[80%]">
                 <div className="header bg-white w-full self-center flex flex-row justify-between mt-3 rounded-lg p-4 drop-shadow-md">
                     <div className="flex flex-row items-center">
@@ -90,14 +91,14 @@ export default function DashboardPage() {
                                 </button>
                                 <button className="rounded-lg bg-red-500 text-white p-2 px-4 hover:bg-red-600 transition-all duration-300 ease-out">
                                     <Icon icon="fa fa-trash" className="mr-2"></Icon>
-                                    ({selectedPayments.length}) Remove Selected
+                                    ({selectedElements.length}) Remove Selected
                                 </button>
                             </div>
 
                             <Table 
                             columns={["", "Payment ID", "Payer Name", "Amount Paid", "Balance", "Date Paid", "Status"]}
-                            data={payments}
-                            selectedItems={selectedPayments}
+                            data={elements}
+                            selectedItems={selectedElements}
                             onSelectAll={handleSelectAll}
                             onSelectRow={handleSelectRow}
                             getRowKey={(row) => row.id}>
