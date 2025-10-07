@@ -2,18 +2,51 @@ import Icon from "../icon";
 
 import { useState, useEffect } from "react"; 
 import { useAuth } from "../../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginForm() {
     const [credentials, setCredentials] = useState({username: "", password: ""});
     const { setUsername, setAuthenticated, setToken } = useAuth();
     const [error, setError] = useState("");
+    const navigate = useNavigate();
 
     useEffect(() => {
         setError("");
     }, [credentials])
 
-    function onSubmit(e) {
+    async function onSubmit(e) {
         e.preventDefault();
+
+        await fetch('http://localhost:8000/users/login-api/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(credentials),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                setError(data.error);
+                return;
+            }
+
+            if (data.session_token) {
+                setToken(data.session_token);
+                setUsername(credentials.username);
+                setAuthenticated(true);
+
+                sessionStorage.setItem('token', data.session_token);
+                sessionStorage.setItem('username', credentials.username);
+                navigate('/dashboard');
+            } else {
+                setError(data.error || "Login failed");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            setError("An error occurred");
+        });
     }
 
     return (

@@ -12,7 +12,7 @@ class Session(models.Model):
     expiry = models.DateTimeField(default=now() + timedelta(hours=12))
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='session')
 
-    @classmethod
+    
     def generate_token():
         alphabet = string.ascii_letters + string.digits
         return ''.join(secrets.choice(alphabet) for _ in range(64))
