@@ -1,6 +1,6 @@
 import Icon from "../components/icon";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import StatusTag from '../components/dashboard/statusTag';
 import Table from '../components/dashboard/table';
@@ -9,6 +9,7 @@ import TabContent from '../components/dashboard/tabContent';
 import LoadingPage from './loading';
 import CreateNewElement from "../components/dashboard/createNewElement";
 import EditElement from "../components/dashboard/editElement";
+import AccountModal from "../components/dashboard/accountModal";
 
 export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
@@ -22,6 +23,9 @@ export default function DashboardPage() {
     const [selectedElements, setSelectedElements] = useState([]);
     const [elementToEdit, setElementToEdit] = useState(null);
     const [elements, setElements] = useState([])
+
+    const [openAccountModal, setOpenAccountModal] = useState(false);
+    const accountModalRef = useRef(null);
 
     function clearSelection() {
         document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
@@ -172,12 +176,32 @@ export default function DashboardPage() {
            setUsername(storedUsername);
        }
 
+
        fetchItems(selectedTab);
        const loader = setTimeout(() => {
            setLoading(false);
        }, 800);
 
-       return () => clearTimeout(loader);
+       return () => {
+           clearTimeout(loader);
+                
+       }
+    }, [])
+
+    // for account modal
+    useEffect(() => {
+        
+        function handleClickOutside(e) {
+           if (accountModalRef.current &&
+               !accountModalRef.current.contains(e.target)
+           ) {
+               setOpenAccountModal(false);
+           }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [])
 
     const handleTabSelect = (tab) => {
@@ -247,7 +271,7 @@ export default function DashboardPage() {
                         <h1 className="text-3xl font-bold text-zinc-700">Columbarium Dashboard</h1>
                     </div>
                     <div id="accountControl" className="flex flex-row items-center">
-                        <button className="p-2 hover:underline text-md text-zinc-700 mr-4"><Icon icon="fa-solid fa-user" className="mr-3"></Icon>{username !== "" ? username : "User Not Found"}</button>
+                        <button onClick={() => setOpenAccountModal(!openAccountModal)} className="p-2 hover:underline text-md text-zinc-700 mr-4"><Icon icon="fa-solid fa-user" className="mr-3"></Icon>{username !== "" ? username : "User Not Found"}</button>
                     </div>
                 </div>
 
@@ -378,6 +402,10 @@ export default function DashboardPage() {
             { openCreateModal && <CreateNewElement tab={selectedTab} onCreate={handleCreate} fields={fieldsByTab[selectedTab]} /> }
             { /* EditElement modal can be added here similarly when needed */ }
             { showEditModal && <EditElement tab={selectedTab} elementData={elementToEdit} fields={fieldsByTab[selectedTab]} onEdit={handleEdit} />}
+
+            <div ref={accountModalRef}>
+                <AccountModal isOpen={openAccountModal} username={username} role={sessionStorage.getItem("role") || 'Staff'} />
+            </div>
         </div>
     )
 }
