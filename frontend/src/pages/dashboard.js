@@ -3,7 +3,6 @@ import Icon from "../components/icon";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import StatusTag from '../components/dashboard/statusTag';
-import Table from '../components/dashboard/table';
 import TabContent from '../components/dashboard/tabContent';
 
 import LoadingPage from './loading';
@@ -13,7 +12,7 @@ import AccountModal from "../components/dashboard/accountModal";
 
 export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
-    const { authenticated, username, setUsername } = useAuth();
+    const { username, setUsername } = useAuth();
     const [selectedTab, setSelectedTab] = useState("Payments");
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -26,10 +25,6 @@ export default function DashboardPage() {
 
     const [openAccountModal, setOpenAccountModal] = useState(false);
     const accountModalRef = useRef(null);
-
-    function clearSelection() {
-        document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-    }
     
     async function fetchItems(endpoint) {
         setElements([]);
@@ -167,9 +162,6 @@ export default function DashboardPage() {
     }
 
     useEffect(() => {
-        /*setElements([
-            { id: 1, payer: "John Doe", amountPaid: 5000, balance: 5000, datePaid: "2024-06-01", status: "Completed" },
-        ])*/
        console.log("Startup");
        const storedUsername = username || sessionStorage.getItem('username');
        if (storedUsername) {
@@ -186,7 +178,7 @@ export default function DashboardPage() {
            clearTimeout(loader);
                 
        }
-    }, [])
+    })
 
     // for account modal
     useEffect(() => {
@@ -202,7 +194,7 @@ export default function DashboardPage() {
         document.addEventListener('mousedown', handleClickOutside);
 
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [])
+    })
 
     const handleTabSelect = (tab) => {
         setElements([])

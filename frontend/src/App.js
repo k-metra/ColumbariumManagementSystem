@@ -1,10 +1,9 @@
 
 import './App.css';
 
-import { useNavigate, BrowserRouter, Routes, Route} from 'react-router-dom'
+import { useNavigate, Routes, Route} from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext';
-import { AuthProvider } from './contexts/AuthContext';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, Suspense } from 'react';
 
 /* Pages */
 import LoginPage from './pages/login';
@@ -76,7 +75,7 @@ function AppContent() {
       // Validate token with backend 
       validateToken(token);
     }
-  }, [])
+  })
 
   return (
     <div className="App">
