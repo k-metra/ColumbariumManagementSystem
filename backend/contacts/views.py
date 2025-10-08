@@ -95,7 +95,7 @@ def edit_contact(request):
             
             # If session is valid, check user for permissions
             user = user_session.user
-            if user.has_permission("edit_records") and user.has_permission("view_dashboard"):
+            if user.has_permission("edit_record") and user.has_permission("view_dashboard"):
                 try:
                     contact = Contact.objects.get(id=contact_id)
                 except Contact.DoesNotExist:
@@ -117,7 +117,7 @@ def edit_contact(request):
 @requires_csrf_token
 def delete_contact(request):
     if request.method == 'DELETE':
-        contacts = request.data.get("contact_ids")
+        contacts = request.data.get("element_ids")
         SESSION_TOKEN = request.headers.get("Session-Token")
 
         if not SESSION_TOKEN:
@@ -133,7 +133,7 @@ def delete_contact(request):
             
             # If session is valid, check user for permissions
             user = user_session.user
-            if user.has_permission("delete_records") and user.has_permission("view_dashboard"):
+            if user.has_permission("delete_record") and user.has_permission("view_dashboard"):
 
                 for id in contacts:
                     print("Deleting id:", id)
