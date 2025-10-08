@@ -209,7 +209,7 @@ export default function DashboardPage() {
         ],
         Occupants: [
             { name: 'name', label: 'Name', type: 'text' },
-            { name: 'date_of_interment', label: 'Date of Interment', type: 'date' },
+            { name: 'interment_date', label: 'Date of Interment', type: 'date' },
             { name: 'niche', label: 'Niche', type: 'text' },
         ],
         Niches: [
@@ -317,17 +317,18 @@ export default function DashboardPage() {
                                     )
                                 },
                                 Occupants: {
-                                    columns: ["", "Occupant ID", "Name", "Date of Interment"],
+                                    columns: ["", "Occupant ID", "Name", "Date of Interment", "Niche"],
                                     toolbarButtons: [
                                         { label: 'Add Occupant', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
                                         { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
-                                        { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: () => {} },
+                                        { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: handleRemoveSelected },
                                     ],
                                     rowRenderer: (row) => (
                                         <>
                                             <td className="p-2">#{(row.id ?? '').toString().padStart(3, "0")}</td>
                                             <td className="p-2">{row.name ?? row.full_name ?? ''}</td>
-                                            <td className="p-2">{row.dateOfInterment ?? row.date_of_interment ?? ''}</td>
+                                            <td className="p-2">{row.dateOfInterment ?? row.interment_date ?? ''}</td>
+                                            <td className="p-2">{row.niche ?? ''}</td>
                                         </>
                                     )   
                                 },
