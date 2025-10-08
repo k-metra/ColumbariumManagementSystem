@@ -113,3 +113,40 @@ def delete_payment(request):
             return Response({"error": "Invalid session token."}, status=status.HTTP_401_UNAUTHORIZED)
         except User.DoesNotExist:
             return Response({"error": "User associated with this session does not exist."}, status=status.HTTP_401_UNAUTHORIZED)
+        
+@api_view(['PUT'])
+@requires_csrf_token
+def edit_payment(request):
+    if request.method == 'PUT':
+        SESSION_TOKEN = request.headers.get("Session-Token")
+
+        if not SESSION_TOKEN:
+            return Response({"error": "Session token is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        id = request.GET.get("payment_id")
+        if not id:
+            return Response({"error": "Payment ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        new_data = request.data
+
+        try:
+            payment = Payment.objects.get(id=id)
+            user_session = Session.objects.get(session_token=SESSION_TOKEN)
+
+            session_expiry = user_session.expiry
+
+            if session_expiry < timezone.now():
+                return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+            
+            user = user_session.user
+            if user.has_permission("edit_record") and user.has_permission("view_dashboard"):
+                serializer = PaymentSerializer(payment, data=new_data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Payment.DoesNotExist:
+            return Response({"error": "Payment record not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Session.DoesNotExist:
+            return Response({"error": "Invalid session token."}, status=status.HTTP_401_UNAUTHORIZED)
