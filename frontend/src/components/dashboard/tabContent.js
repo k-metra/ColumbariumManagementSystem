@@ -16,9 +16,9 @@ export default function TabContent({
     children // row renderer: function(row) => JSX
 }) {
     return (
-        <div className="w-full h-full flex flex-col">
+        <div className="w-full h-full flex flex-col overflow-auto">
             <h2 className="text-2xl ml-2 font-bold text-zinc-700">{title}</h2>
-            <input value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} id="search" className="bg-slate-50 border border-black/10 rounded-lg self-center h-12 w-[60%] text-zinc-700 outline-none px-3" placeholder="Search..."></input>
+            <input value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} id="search" className="bg-slate-50 border border-black/10 rounded-lg self-center h-12 min-h-12 min-w-[60%] w-[60%] text-zinc-700 outline-none px-3" placeholder="Search..."></input>
 
             <div className="flex flex-row gap-2 self-center items-center justify-center border-b border-black/12 py-3 px-10 pt-4 mb-6">
                 {toolbarButtons.map((btn, idx) => (
