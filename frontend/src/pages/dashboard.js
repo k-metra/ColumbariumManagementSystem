@@ -121,11 +121,10 @@ export default function DashboardPage() {
            setUsername(storedUsername);
        }
 
-       const loadingTimer = setTimeout(() => {
+       fetchItems(selectedTab);
+       const loader = setTimeout(() => {
             setLoading(false);
-       }, 500);
-
-       return () => clearTimeout(loadingTimer);
+       }, 800);
        
         
     }, [])
