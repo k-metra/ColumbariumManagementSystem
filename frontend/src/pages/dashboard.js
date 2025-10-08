@@ -52,6 +52,14 @@ export default function DashboardPage() {
         }
     }
 
+    const handleEditClick = () => {
+         if (selectedElements.length === 1) {
+            setElementToEdit(elements.find(e => e.id === selectedElements[0]))
+            setShowEditModal(true);
+            }
+        }
+    
+
     async function handleRemoveSelected(e) {
         e.preventDefault();
 
@@ -269,12 +277,7 @@ export default function DashboardPage() {
                                     columns: ["", "Payment ID", "Payer Name", "Amount Paid", "Amount Due", "Remaining Balance", "Date Paid", "Status"],
                                     toolbarButtons: [
                                         { label: 'Add Payment', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
-                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: () => {
-                                            if (selectedElements.length === 1) {
-                                                setElementToEdit(elements.find(e => e.id === selectedElements[0]))
-                                                setShowEditModal(true);
-                                            }
-                                        } },
+                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
                                         { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: (e) => { handleRemoveSelected(e) } },
                                     ],
                                     rowRenderer: (row) => (
@@ -294,8 +297,8 @@ export default function DashboardPage() {
                                     columns: ["", "Contact ID", "Family Name", "Deceased's Name", "Deceased Date", "Contact Number"],
                                     toolbarButtons: [
                                         { label: 'Add Contact', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
-                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: () => {} },
-                                        { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', textClass:'text-white', bg: 'bg-red-500 text-white', onClick: () => {} },
+                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
+                                        { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', textClass:'text-white', bg: 'bg-red-500 text-white', onClick: handleRemoveSelected },
                                     ],
                                     rowRenderer: (row) => (
                                         <>
@@ -313,7 +316,7 @@ export default function DashboardPage() {
                                     columns: ["", "Occupant ID", "Name", "Date of Interment"],
                                     toolbarButtons: [
                                         { label: 'Add Occupant', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
-                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: () => {} },
+                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
                                         { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: () => {} },
                                     ],
                                     rowRenderer: (row) => (
