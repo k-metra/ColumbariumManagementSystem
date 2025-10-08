@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'users',
     'roles',
     'payments',
+    'contacts',
     'user_sessions',
 ]
 
