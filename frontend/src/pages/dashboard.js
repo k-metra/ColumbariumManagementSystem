@@ -190,7 +190,7 @@ export default function DashboardPage() {
     return (
         <div className="h-screen w-screen items-center flex flex-col bg-[#fbfbfb]">
             <title>Dashboard</title>
-            <div className="w-[90%] h-[80%]">
+            <div className="min-w-[90%] min-h-[80%] max-w-[100%] max-h-[100%]">
                 <div className="header bg-white w-full self-center flex flex-row justify-between mt-3 rounded-lg p-4 drop-shadow-md">
                     <div className="flex flex-row items-center">
                         <button onClick={(e) => {setSidebarOpen(!sidebarOpen)}} className="p-2 text-[22px] rounded-full hover:bg-black/10 text-zinc-700 mr-4"><Icon icon="fa-solid fa-bars"></Icon></button>
