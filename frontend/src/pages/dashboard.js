@@ -162,7 +162,6 @@ export default function DashboardPage() {
     }
 
     useEffect(() => {
-       console.log("Startup");
        const storedUsername = username || sessionStorage.getItem('username');
        if (storedUsername) {
            setUsername(storedUsername);
@@ -178,7 +177,7 @@ export default function DashboardPage() {
            clearTimeout(loader);
                 
        }
-    })
+    }, [username, selectedTab, setUsername])
 
     // for account modal
     useEffect(() => {
