@@ -77,7 +77,7 @@ export default function DashboardPage() {
                         'Content-Type': 'application/json',
                         'Session-Token': sessionStorage.getItem('token'),
                     },
-                    body: JSON.stringify({ payment_ids: selectedElements })
+                    body: JSON.stringify({ element_ids: selectedElements })
                 })
             } catch (Exception) {
                 console.log("Error deleting items: ", Exception);
@@ -97,7 +97,7 @@ export default function DashboardPage() {
         const endpoint = selectedTab.toLowerCase();
 
         try {
-            await fetch(`http://localhost:8000/api/${endpoint}/edit/?payment_id=${elementToEdit.id}`, {
+            await fetch(`http://localhost:8000/api/${endpoint}/edit/?${endpoint.slice(0, -1)}_id=${elementToEdit.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -197,17 +197,19 @@ export default function DashboardPage() {
             { name: 'payer', label: 'Payer Name', type: 'text', placeholder: 'Payer Name' },
             { name: 'amount_due', label: 'Amount Due', type: 'number', placeholder: 'Amount Due' },
             { name: 'amount_paid', label: 'Amount Paid', type: 'number', placeholder: 'Amount Paid' },
+            { name: 'maintenance_fee', label: 'Maintenance Fee', type: 'number', placeholder: 'Maintenance Fee' },
             { name: 'payment_date', label: 'Date Paid', type: 'date' },
         ],
         Contacts: [
-            { name: 'familyName', label: "Family Name", type: 'text' },
-            { name: 'deceasedName', label: "Deceased's Name", type: 'text' },
-            { name: 'deceasedDate', label: "Deceased Date", type: 'date' },
-            { name: 'contactNumber', label: 'Contact Number', type: 'text' },
+            { name: 'family_name', label: "Family Name", type: 'text' },
+            { name: 'deceased_name', label: "Deceased's Name", type: 'text' },
+            { name: 'deceased_date', label: "Deceased Date", type: 'date' },
+            { name: 'address', label: "Address", type: 'textarea' },
+            { name: 'contact_number', label: 'Contact Number', type: 'text' },
         ],
         Occupants: [
             { name: 'name', label: 'Name', type: 'text' },
-            { name: 'dateOfInterment', label: 'Date of Interment', type: 'date' },
+            { name: 'date_of_interment', label: 'Date of Interment', type: 'date' },
             { name: 'niche', label: 'Niche', type: 'text' },
         ],
         Niches: [
@@ -233,7 +235,7 @@ export default function DashboardPage() {
         else setSelectedElements([]);
     }
 
-    if (loading) return <LoadingPage />;
+    if (loading) return <LoadingPage />;    
 
     return (
         <div className="min-h-screen screen overflow-auto items-center flex flex-col bg-[#fbfbfb]">
@@ -274,7 +276,7 @@ export default function DashboardPage() {
                         {(() => {
                             const tabs = {
                                 Payments: {
-                                    columns: ["", "Payment ID", "Payer Name", "Amount Paid", "Amount Due", "Remaining Balance", "Date Paid", "Status"],
+                                    columns: ["", "Payment ID", "Payer Name", "Amount Paid", "Amount Due", "Remaining Balance", "Maintenance Fee", "Date Paid", "Status"],
                                     toolbarButtons: [
                                         { label: 'Add Payment', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
                                         { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
@@ -287,6 +289,7 @@ export default function DashboardPage() {
                                             <td className="p-2">₱ {Number(row.amountPaid ?? row.amount_paid ?? 0).toLocaleString("en-US", {minimumFractionDigits: 2 })}</td>
                                             <td className="p-2">₱ {Number(row.balance ?? row.amount_due ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
                                             <td className="p-2">₱ {Number(row.remainingBalance ?? row.remaining_balance ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                                            <td className="p-2">₱ {Number(row.maintenanceFee ?? row.maintenance_fee ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
                                             <td className="p-2">{new Intl.DateTimeFormat('en-US').format(new Date(row.payment_date))}</td>
                                             <td className="p-2"><StatusTag status={row.status ?? row.state ?? ''} />
                                     </td>
@@ -294,7 +297,7 @@ export default function DashboardPage() {
                                     )
                                 },
                                 Contacts: {
-                                    columns: ["", "Contact ID", "Family Name", "Deceased's Name", "Deceased Date", "Contact Number"],
+                                    columns: ["", "Contact ID", "Family Name", "Deceased's Name", "Deceased Date", "Address", "Contact Number"],
                                     toolbarButtons: [
                                         { label: 'Add Contact', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
                                         { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
@@ -306,6 +309,7 @@ export default function DashboardPage() {
                                             <td className="p-2">{row.familyName ?? row.family_name ?? row.family}</td>
                                             <td className="p-2">{row.deceasedName ?? row.deceased_name ?? row.deceased}</td>
                                             <td className="p-2">{row.deceasedDate ?? row.deceased_date ?? ''}</td>
+                                            <td className="p-2">{row.address ?? ''}</td>
                                             <td className="p-2">{row.contactNumber ?? row.contact_number ?? ''}</td>
                                             <td className="p-2"><StatusTag status={row.status ?? ''} />
                                     </td>
