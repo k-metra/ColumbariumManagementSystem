@@ -7,6 +7,7 @@ class Payment(models.Model):
     amount_due = models.DecimalField(max_digits=10, decimal_places=2)
     payment_date = models.DateTimeField(default=models.functions.Now)
     remaining_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    maintenance_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     status = models.CharField(max_length=50) # status is either Completed, Pending or Inactive
 
     def __str__(self):
