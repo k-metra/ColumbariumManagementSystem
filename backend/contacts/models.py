@@ -6,4 +6,5 @@ class Contact(models.Model):
     family_name = models.CharField(max_length=100)
     deceased_name = models.CharField(max_length=100)
     deceased_date = models.DateField(default=timezone.now)
+    address = models.TextField(blank=True, null=True)
     contact_number = models.CharField(max_length=15)
