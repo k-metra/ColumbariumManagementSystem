@@ -7,6 +7,7 @@ import Table from '../components/dashboard/table';
 import TabContent from '../components/dashboard/tabContent';
 
 import LoadingPage from './loading';
+import CreateNewElement from "../components/dashboard/createNewElement";
 
 export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
@@ -14,6 +15,7 @@ export default function DashboardPage() {
     const [selectedTab, setSelectedTab] = useState("Payments");
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [openCreateModal, setOpenCreateModal] = useState(false);
 
     const [selectedElements, setSelectedElements] = useState([]);
     const [elements, setElements] = useState([])
@@ -110,7 +112,7 @@ export default function DashboardPage() {
         }
         
     }
-    
+
     useEffect(() => {
         /*setElements([
             { id: 1, payer: "John Doe", amountPaid: 5000, balance: 5000, datePaid: "2024-06-01", status: "Completed" },
@@ -123,9 +125,9 @@ export default function DashboardPage() {
 
        fetchItems(selectedTab);
        const loader = setTimeout(() => {
-            setLoading(false);
+           setLoading(false);
        }, 800);
-       
+
        return () => clearTimeout(loader);
     }, [])
 
@@ -185,7 +187,7 @@ export default function DashboardPage() {
     if (loading) return <LoadingPage />;
 
     return (
-        <div className="min-h-screen min-w-screen overflow-auto items-center flex flex-col bg-[#fbfbfb]">
+        <div className="min-h-screen screen overflow-auto items-center flex flex-col bg-[#fbfbfb]">
             <title>Dashboard</title>
             <div className="min-w-[90%] min-h-[80%] max-w-[100%] max-h-[100%]">
                 <div className="header bg-white w-full self-center flex flex-row justify-between mt-3 rounded-lg p-4 drop-shadow-md">
