@@ -80,7 +80,7 @@ def create_payment(request):
 @api_view(['DELETE'])
 def delete_payment(request):
     if request.method == 'DELETE':
-        payments = request.data.get("payment_ids")
+        payments = request.data.get("element_ids")
         SESSION_TOKEN = request.headers.get("Session-Token")
 
         if not SESSION_TOKEN:
