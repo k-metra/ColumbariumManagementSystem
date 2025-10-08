@@ -6,7 +6,10 @@ import StatusTag from '../components/dashboard/statusTag';
 import Table from '../components/dashboard/table';
 import TabContent from '../components/dashboard/tabContent';
 
+import LoadingPage from './loading';
+
 export default function DashboardPage() {
+    const [loading, setLoading] = useState(true);
     const { authenticated, username, setUsername } = useAuth();
     const [selectedTab, setSelectedTab] = useState("Payments");
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -20,7 +23,18 @@ export default function DashboardPage() {
             { id: 1, payer: "John Doe", amountPaid: 5000, balance: 5000, datePaid: "2024-06-01", status: "Completed" },
         ])*/
        console.log("Startup");
+       const storedUsername = username || sessionStorage.getItem('username');
+       if (storedUsername) {
+           setUsername(storedUsername);
+       }
+
+       const loadingTimer = setTimeout(() => {
+            setLoading(false);
+       }, 500);
+
+       return () => clearTimeout(loadingTimer);
        
+        
     }, [])
 
     const handleTabSelect = (e) => {
@@ -42,6 +56,8 @@ export default function DashboardPage() {
         if (checked) setSelectedElements(elements.map((p) => p.id));
         else setSelectedElements([]);
     }
+
+    if (loading) return <LoadingPage />;
 
     return (
         <div className="h-screen w-screen items-center flex flex-col bg-[#fbfbfb]">
