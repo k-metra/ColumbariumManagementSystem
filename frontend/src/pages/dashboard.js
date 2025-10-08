@@ -8,6 +8,7 @@ import TabContent from '../components/dashboard/tabContent';
 
 import LoadingPage from './loading';
 import CreateNewElement from "../components/dashboard/createNewElement";
+import EditElement from "../components/dashboard/editElement";
 
 export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
@@ -16,9 +17,15 @@ export default function DashboardPage() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [openCreateModal, setOpenCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
 
     const [selectedElements, setSelectedElements] = useState([]);
+    const [elementToEdit, setElementToEdit] = useState(null);
     const [elements, setElements] = useState([])
+
+    function clearSelection() {
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    }
     
     async function fetchItems(endpoint) {
         setElements([]);
@@ -68,8 +75,42 @@ export default function DashboardPage() {
                 console.log("Error deleting items: ", Exception);
             } finally {
                 setSelectedElements([]);
+
                 await fetchItems(selectedTab);
             }
+        }
+    }
+
+    const handleEdit = async(data) => {
+        // close on both edit and cancel
+        setShowEditModal(false);
+        if (data === null) return;
+
+        const endpoint = selectedTab.toLowerCase();
+
+        try {
+            await fetch(`http://localhost:8000/api/${endpoint}/edit/?payment_id=${elementToEdit.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Session-Token': sessionStorage.getItem('token'),
+                },
+                body: JSON.stringify(data)
+            }).then(response => {
+                if (!response.ok) {
+                    console.log("Failed to edit item")
+                }
+
+                return response.json();
+            }).then(data => {
+                console.log(data);
+            })
+        } catch (Exception) {
+
+        } finally {
+            setSelectedElements([]);
+            setElementToEdit(null);
+            fetchItems(selectedTab);
         }
     }
 
@@ -225,10 +266,15 @@ export default function DashboardPage() {
                         {(() => {
                             const tabs = {
                                 Payments: {
-                                    columns: ["", "Payment ID", "Payer Name", "Amount Paid", "Amount Due", "Date Paid", "Status"],
+                                    columns: ["", "Payment ID", "Payer Name", "Amount Paid", "Amount Due", "Remaining Balance", "Date Paid", "Status"],
                                     toolbarButtons: [
                                         { label: 'Add Payment', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
-                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: () => {} },
+                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: () => {
+                                            if (selectedElements.length === 1) {
+                                                setElementToEdit(elements.find(e => e.id === selectedElements[0]))
+                                                setShowEditModal(true);
+                                            }
+                                        } },
                                         { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: (e) => { handleRemoveSelected(e) } },
                                     ],
                                     rowRenderer: (row) => (
@@ -237,6 +283,7 @@ export default function DashboardPage() {
                                             <td className="p-2">{row.payer ?? row.payer_name ?? row.payerName}</td>
                                             <td className="p-2">₱ {Number(row.amountPaid ?? row.amount_paid ?? 0).toLocaleString("en-US", {minimumFractionDigits: 2 })}</td>
                                             <td className="p-2">₱ {Number(row.balance ?? row.amount_due ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                                            <td className="p-2">₱ {Number(row.remainingBalance ?? row.remaining_balance ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
                                             <td className="p-2">{new Intl.DateTimeFormat('en-US').format(new Date(row.payment_date))}</td>
                                             <td className="p-2"><StatusTag status={row.status ?? row.state ?? ''} />
                                     </td>
@@ -321,6 +368,8 @@ export default function DashboardPage() {
             </div>
 
             { openCreateModal && <CreateNewElement tab={selectedTab} onCreate={handleCreate} fields={fieldsByTab[selectedTab]} /> }
+            { /* EditElement modal can be added here similarly when needed */ }
+            { showEditModal && <EditElement tab={selectedTab} elementData={elementToEdit} fields={fieldsByTab[selectedTab]} onEdit={handleEdit} />}
         </div>
     )
 }
