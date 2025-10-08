@@ -27,6 +27,7 @@ export default function Table({ columns, data, selectedItems, onSelectAll, onSel
                                 <input 
                                     type="checkbox" 
                                     checked={isSelected}
+                                    
                                     onChange={() => onSelectRow(rowKey)}
                                 />
                             </td>
