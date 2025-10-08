@@ -33,7 +33,7 @@ def list_payments(request):
                 payments = Payment.objects.all().order_by('-payment_date')
 
                 serializer = PaymentSerializer(payments, many=True)
-                print(serializer.data)
+            
                 return Response(serializer.data, status=status.HTTP_200_OK)
 
             return Response({"error": "You do not have permission to view these records."}, status=status.HTTP_403_FORBIDDEN)

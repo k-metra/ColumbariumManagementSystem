@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'roles',
     'payments',
     'contacts',
+    'occupants',
     'user_sessions',
 ]
 

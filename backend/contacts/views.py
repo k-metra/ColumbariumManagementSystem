@@ -34,7 +34,7 @@ def list_contacts(request):
                 contacts = Contact.objects.all().order_by('-deceased_date')
 
                 serializer = ContactSerializer(contacts, many=True)
-                print(serializer.data)
+                
                 return Response(serializer.data, status=status.HTTP_200_OK)
 
             return Response({"error": "You do not have permission to view these records."}, status=status.HTTP_403_FORBIDDEN)
