@@ -4,11 +4,12 @@ import './App.css';
 import { useNavigate, BrowserRouter, Routes, Route} from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { useEffect, useState, Suspense } from 'react';
 
 /* Pages */
 import LoginPage from './pages/login';
-import RegisterPage from './pages/register';
 import DashboardPage from './pages/dashboard';
+import LoadingPage from './pages/loading';
 /* */
 
 
@@ -18,19 +19,67 @@ const PublicRoute = ({ children }) => {
 
 const PrivateRoute = ({ children }) => {
   const { authenticated } = useAuth();
+  const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!authenticated) {
+      navigate('/login/');
+      return;
+    }
+  })
+
+  return children
 }
 
 const AuthRoute = ({ children }) => {
   const { authenticated } = useAuth();
+  const navig = useNavigate();
+  console.log("Authenticated: ", authenticated);
 
-  return !authenticated ? children : <p>No</p>
+  useEffect(() => {
+    if (authenticated) {
+      navig('/dashboard/');
+      return;
+    }
+  })
+
+  return children;
 }
 
-function App() {
+function AppContent() {
+  const { authenticated, setAuthenticated } = useAuth();
+  useEffect(() => {
+    async function validateToken(token) {
+      await fetch('http://localhost:8000/api/verify-token/', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Session-Token': token,
+        }
+        
+      }).then(response => {
+        if (response.ok) {
+          setAuthenticated(true);
+          console.log("Token valid");
+
+          console.log("Authenticated2: ", authenticated);
+        } else {
+          setAuthenticated(false);
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('username');
+        }
+      })
+    }
+
+    const token = sessionStorage.getItem('token');
+    if (token) {
+      // Validate token with backend 
+      validateToken(token);
+    }
+  }, [])
+
   return (
     <div className="App">
-      <BrowserRouter>
         <Routes>
           <Route path="" element={
               <PublicRoute>
@@ -39,23 +88,30 @@ function App() {
           } ></Route>
 
           <Route path="/login/" element ={
-            <AuthProvider>
               <AuthRoute>
-                <LoginPage />
+                <Suspense fallback={<LoadingPage />}>
+                  <LoginPage />
+                </Suspense>
               </AuthRoute>
-            </AuthProvider>
           } />
 
 
           <Route path="/dashboard/" element = {
-            <AuthProvider>
-                <DashboardPage />
-            </AuthProvider>
+              <PrivateRoute>
+                <Suspense fallback={<LoadingPage />}>
+                  <DashboardPage />
+                </Suspense>
+              </PrivateRoute>
           } />
         </Routes>
-      </BrowserRouter>
     </div>
   );
+}
+
+function App () {
+  return (
+      <AppContent />
+  )
 }
 
 export default App;
