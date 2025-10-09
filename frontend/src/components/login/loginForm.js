@@ -33,11 +33,12 @@ export default function LoginForm() {
 
             if (data.session_token) {
                 setToken(data.session_token);
-                setUsername(credentials.username);
+                setUsername(data.user.username);
                 setAuthenticated(true);
 
                 sessionStorage.setItem('token', data.session_token);
-                sessionStorage.setItem('username', credentials.username);
+                sessionStorage.setItem('username', data.user.username);
+                sessionStorage.setItem('role', data.user.role);
                 navigate('/dashboard');
             } else {
                 setError(data.error || "Login failed");
