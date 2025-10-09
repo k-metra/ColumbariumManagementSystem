@@ -32,7 +32,20 @@ def login_view(request):
 
         user_session.save()
         serialized = UserSerializer(user, many=False)
+        print(serialized.data)   
         return Response({"message": "Login successful.", "session_token": user_session.session_token, "user": serialized.data}, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response({"error": "Invalid username or password."}, status=status.HTTP_401_UNAUTHORIZED)
 
+@api_view(['DELETE'])
+def logout_view(request):
+    authorization_header = request.headers.get("Authorization", "")
+    if authorization_header.startswith("Session "):
+        token = authorization_header.split(" ")[1]
+        try:
+            session = Session.objects.get(session_token=token)
+            session.delete()
+            return Response({"message": "Logout successful."}, status=status.HTTP_200_OK)
+        except Session.DoesNotExist:
+            return Response({"error": "Invalid session."}, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({"error": "Authorization header missing."}, status=status.HTTP_401_UNAUTHORIZED)

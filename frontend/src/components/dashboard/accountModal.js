@@ -1,6 +1,20 @@
 import Icon from '../icon';
 
 export default function AccountModal({ username, role, isOpen }) {
+    const handleLogout = async () => {
+
+        await fetch('http://localhost:8000/api/logout-api/', {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                "Authorization": `Session ${sessionStorage.getItem("session_token")}`
+            }
+        }).then(() => {
+            sessionStorage.clear();
+            window.location.href = '/login';
+        })
+    }
     return (
         <>
             <div className={`transition-all duration-200 ease-out p-6 m-2 border rounded-md w-[190px] min-h-12 top-[66px] ${isOpen ? 'z-[999] opacity-100 scale-100' : '-z-10 opacity-0 scale-95'} right-10 absolute shadow-md bg-white flex flex-col gap-1 justify-start items-left`}>
@@ -13,7 +27,7 @@ export default function AccountModal({ username, role, isOpen }) {
                     </div>
                 </div>
                 <div className="text-right self-end block mt-0">
-                    <button className={`text-zinc-700 ${!isOpen && 'pointer-events-none'} hover:font-semibold mt-2 py-0 transition-all duration-100 ease-out`}>Logout</button>
+                    <button onClick={handleLogout} className={`text-zinc-700 ${!isOpen && 'pointer-events-none'} hover:font-semibold mt-2 py-0 transition-all duration-100 ease-out`}>Logout</button>
                 </div>
             </div>
         </>
