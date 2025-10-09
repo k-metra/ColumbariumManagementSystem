@@ -23,12 +23,9 @@ class AuditMiddleware(MiddlewareMixin):
                 user = session.user
 
                 request.user = user
-                print("User authenticated: ", user.username)
             except Session.DoesNotExist:
-                print("Session does NOT exist")
                 request.user = None
             except User.DoesNotExist:
-                print("User does NOT exist")
                 request.user = None
         else:
             request.user = None
@@ -71,7 +68,7 @@ class AuditMiddleware(MiddlewareMixin):
         print("User: ", user)
 
         if path.startswith('/api/') and method in ['POST', 'PUT', 'DELETE']:
-            if path == '/api/login/': return response
+            if path == '/api/login-api/' or path== "/api/logout-api/": return response
 
             # Extract app/action from path
             parts = path.strip('/').split('/')
