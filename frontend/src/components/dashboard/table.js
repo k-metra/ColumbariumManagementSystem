@@ -23,14 +23,14 @@ export default function Table({ columns, data, selectedItems, onSelectAll, onSel
                             key={rowKey}
                             className="border-b even:bg-[#fafafa] even:hover:bg:black/10 border-black/10 hover:bg-black/5 text-zinc-700"
                         >
-                            <td className="p-2 py-4 pl-4">
+                            { columns[0] === "" && <td className="p-2 py-4 pl-4">
                                 <input 
                                     type="checkbox" 
                                     checked={isSelected}
                                     
                                     onChange={() => onSelectRow(rowKey)}
                                 />
-                            </td>
+                            </td>}
 
                             {children(row, idx)}
                         </tr>
