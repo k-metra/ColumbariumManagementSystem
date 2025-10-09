@@ -7,7 +7,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'role', 'permissions']
+        fields = ['id', 'username', 'role', 'permissions', 'role']
 
     def get_permissions(self, obj):
         if not obj.role:
