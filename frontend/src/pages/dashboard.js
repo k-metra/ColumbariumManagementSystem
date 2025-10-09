@@ -35,6 +35,7 @@ export default function DashboardPage() {
 
     const [openAccountModal, setOpenAccountModal] = useState(false);
     const accountModalRef = useRef(null);
+    const [filter, setFilter] = useState("");
     
     async function fetchItems(endpoint) {
         setElements([]);
@@ -55,12 +56,46 @@ export default function DashboardPage() {
                     return response.json();
                 }
             }).then(data => {
-                setElements(data);
-                console.log("Fetched items: ", data);
+                // normalize server response keys to camelCase for consistent UI usage
+                const normalizeKey = (s) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+
+                const normalizeObject = (obj) => {
+                    if (obj === null || obj === undefined) return obj;
+                    if (Array.isArray(obj)) return obj.map(normalizeObject);
+                    if (typeof obj !== 'object') return obj;
+                    const res = {};
+                    Object.keys(obj).forEach(k => {
+                        const newKey = normalizeKey(k);
+                        const val = obj[k];
+                        res[newKey] = normalizeObject(val);
+                    });
+                    return res;
+                }
+
+                const normalized = Array.isArray(data) ? data.map(normalizeObject) : data;
+                setElements(normalized);
+                console.log("Fetched items (normalized): ", normalized);
             })
         } catch (Exception) {
             console.log("Error fetching items: ", Exception);
         }
+    }
+
+    // convert camelCase keys used in the UI back to snake_case for the API
+    const camelToSnake = (s) => s.replace(/([A-Z])/g, (m) => '_' + m.toLowerCase());
+
+    const convertKeysToSnake = (obj) => {
+        if (obj === null || obj === undefined) return obj;
+        if (Array.isArray(obj)) return obj.map(convertKeysToSnake);
+        if (obj instanceof Date) return obj.toISOString();
+        if (typeof obj !== 'object') return obj;
+
+        const res = {};
+        Object.keys(obj).forEach((k) => {
+            const newKey = camelToSnake(k);
+            res[newKey] = convertKeysToSnake(obj[k]);
+        });
+        return res;
     }
 
     const handleEditClick = () => {
@@ -111,6 +146,9 @@ export default function DashboardPage() {
         const endpoint = selectedTab.toLowerCase();
 
         try {
+            // convert field names to snake_case before sending to API
+            const payload = convertKeysToSnake(data);
+
             await fetch(`http://localhost:8000/api/${endpoint}/edit/?${endpoint.slice(0, -1)}_id=${elementToEdit.id}`, {
                 method: 'PUT',
                 headers: {
@@ -119,7 +157,7 @@ export default function DashboardPage() {
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'X-CSRFToken': getCsrf(),
                 },
-                body: JSON.stringify(data),
+                body: JSON.stringify(payload),
                 credentials: 'include',
             }).then(response => {
                 if (!response.ok) {
@@ -155,6 +193,9 @@ export default function DashboardPage() {
 
         const endpoint = selectedTab.toLowerCase();
         try {
+            // convert field names to snake_case before sending to API
+            const payload = convertKeysToSnake(data);
+
             await fetch("http://localhost:8000/api/" + endpoint + "/create-new/", {
                 method: 'POST',
                 headers: {
@@ -163,7 +204,7 @@ export default function DashboardPage() {
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'X-CSRFToken': getCsrf(),
                 },
-                body: JSON.stringify(data),
+                body: JSON.stringify(payload),
                 credentials: 'include',
             }).then(response => {
                 if (!response.ok) {
@@ -183,13 +224,14 @@ export default function DashboardPage() {
     }
 
     useEffect(() => {
+        setFilter("");
        const storedUsername = username || sessionStorage.getItem('username');
        if (storedUsername) {
            setUsername(storedUsername);
        }
 
-
        fetchItems(selectedTab);
+
        const loader = setTimeout(() => {
            setLoading(false);
        }, 800);
@@ -231,21 +273,21 @@ export default function DashboardPage() {
     const fieldsByTab = {
         Payments: [
             { name: 'payer', label: 'Payer Name', type: 'text', placeholder: 'Payer Name' },
-            { name: 'amount_due', label: 'Amount Due', type: 'number', placeholder: 'Amount Due' },
-            { name: 'amount_paid', label: 'Amount Paid', type: 'number', placeholder: 'Amount Paid' },
-            { name: 'maintenance_fee', label: 'Maintenance Fee', type: 'number', placeholder: 'Maintenance Fee' },
-            { name: 'payment_date', label: 'Date Paid', type: 'date' },
+            { name: 'amountDue', label: 'Amount Due', type: 'number', placeholder: 'Amount Due' },
+            { name: 'amountPaid', label: 'Amount Paid', type: 'number', placeholder: 'Amount Paid' },
+            { name: 'maintenanceFee', label: 'Maintenance Fee', type: 'number', placeholder: 'Maintenance Fee' },
+            { name: 'paymentDate', label: 'Date Paid', type: 'date' },
         ],
         Contacts: [
-            { name: 'family_name', label: "Family Name", type: 'text' },
-            { name: 'deceased_name', label: "Deceased's Name", type: 'text' },
-            { name: 'deceased_date', label: "Deceased Date", type: 'date' },
+            { name: 'familyName', label: "Family Name", type: 'text' },
+            { name: 'deceasedName', label: "Deceased's Name", type: 'text' },
+            { name: 'deceasedDate', label: "Deceased Date", type: 'date' },
             { name: 'address', label: "Address", type: 'textarea' },
-            { name: 'contact_number', label: 'Contact Number', type: 'text' },
+            { name: 'contactNumber', label: 'Contact Number', type: 'text' },
         ],
         Occupants: [
             { name: 'name', label: 'Name', type: 'text' },
-            { name: 'interment_date', label: 'Date of Interment', type: 'date' },
+            { name: 'intermentDate', label: 'Date of Interment', type: 'date' },
             { name: 'niche', label: 'Niche', type: 'text' },
         ],
         Niches: [
@@ -256,7 +298,7 @@ export default function DashboardPage() {
                 { value: 'Available', label: 'Available' },
                 { value: 'Occupied', label: 'Occupied' },
             ] },
-        ]
+        ],
     };
 
     const handleSelectRow = (id) => {
@@ -300,6 +342,9 @@ export default function DashboardPage() {
                         <button onClick={ () => handleTabSelect("Occupants")} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-box-open" className="mr-3"></Icon>Occupants</button>
 
                         <button onClick={() => handleTabSelect("Niches")} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-square-person-confined" className="mr-3"></Icon>Niches</button>
+                        
+                        {/* Audit Logs*/}
+                        {sessionStorage.getItem("permissions").split(",").includes("view_audit") && <button onClick={() => handleTabSelect("Audit")} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-users" className="mr-3"></Icon>Audit Logs</button>}
 
                         <button onClick={() => handleTabSelect("Report")} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-comments" className="mr-3"></Icon>Report</button>
                     </div>}
@@ -312,7 +357,17 @@ export default function DashboardPage() {
                         {(() => {
                             const tabs = {
                                 Payments: {
-                                    columns: ["", "Payment ID", "Payer Name", "Amount Paid", "Amount Due", "Remaining Balance", "Maintenance Fee", "Date Paid", "Status"],
+                                    columns: [
+                                        { label: "", key: "_select" },
+                                        { label: "Payment ID", key: "id", type: 'number' },
+                                        { label: "Payer Name", key: "payer", type: 'text' },
+                                        { label: "Amount Paid", key: "amountPaid", type: 'number' },
+                                        { label: "Amount Due", key: "amountDue", type: 'number' },
+                                        { label: "Remaining Balance", key: "remainingBalance", type: 'number' },
+                                        { label: "Maintenance Fee", key: "maintenanceFee", type: 'number' },
+                                        { label: "Date Paid", key: "paymentDate", type: 'date' },
+                                        { label: "Status", key: "status", type: 'text' }
+                                    ],
                                     toolbarButtons: [
                                         { label: 'Add Payment', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
                                         { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
@@ -320,20 +375,28 @@ export default function DashboardPage() {
                                     ],
                                     rowRenderer: (row) => (
                                         <>
-                                            <td className="p-2">#{row.id.toString().padStart(3, "0")}</td>
-                                            <td className="p-2">{row.payer ?? row.payer_name ?? row.payerName}</td>
-                                            <td className="p-2">₱ {Number(row.amountPaid ?? row.amount_paid ?? 0).toLocaleString("en-US", {minimumFractionDigits: 2 })}</td>
-                                            <td className="p-2">₱ {Number(row.balance ?? row.amount_due ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                                            <td className="p-2">₱ {Number(row.remainingBalance ?? row.remaining_balance ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                                            <td className="p-2">₱ {Number(row.maintenanceFee ?? row.maintenance_fee ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                                            <td className="p-2">{new Intl.DateTimeFormat('en-US').format(new Date(row.payment_date))}</td>
-                                            <td className="p-2"><StatusTag status={row.status ?? row.state ?? ''} />
+                        <td className="p-2">#{(row.id ?? '').toString().padStart(3, "0")}</td>
+                        <td className="p-2">{row.payer ?? row.payerName ?? ''}</td>
+                        <td className="p-2">₱ {Number(row.amountPaid ?? row.amountPaid ?? row.amount_paid ?? 0).toLocaleString("en-US", {minimumFractionDigits: 2 })}</td>
+                        <td className="p-2">₱ {Number(row.amountDue ?? row.amount_due ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                        <td className="p-2">₱ {Number(row.remainingBalance ?? row.remaining_balance ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                        <td className="p-2">₱ {Number(row.maintenanceFee ?? row.maintenance_fee ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                        <td className="p-2">{row.paymentDate ? new Intl.DateTimeFormat('en-US').format(new Date(row.paymentDate)) : ''}</td>
+                        <td className="p-2"><StatusTag status={row.status ?? row.state ?? ''} />
                                     </td>
                                         </>
                                     )
                                 },
                                 Contacts: {
-                                    columns: ["", "Contact ID", "Family Name", "Deceased's Name", "Deceased Date", "Address", "Contact Number"],
+                                    columns: [
+                                        { label: "", key: "_select" },
+                                        { label: "Contact ID", key: "id", type: 'number' },
+                                        { label: "Family Name", key: "familyName", type: 'text' },
+                                        { label: "Deceased's Name", key: "deceasedName", type: 'text' },
+                                        { label: "Deceased Date", key: "deceasedDate", type: 'date' },
+                                        { label: "Address", key: "address", type: 'text' },
+                                        { label: "Contact Number", key: "contactNumber", type: 'text' }
+                                    ],
                                     toolbarButtons: [
                                         { label: 'Add Contact', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
                                         { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
@@ -342,18 +405,24 @@ export default function DashboardPage() {
                                     rowRenderer: (row) => (
                                         <>
                                             <td className="p-2">#{(row.id ?? '').toString().padStart(3, "0")}</td>
-                                            <td className="p-2">{row.familyName ?? row.family_name ?? row.family}</td>
-                                            <td className="p-2">{row.deceasedName ?? row.deceased_name ?? row.deceased}</td>
-                                            <td className="p-2">{row.deceasedDate ?? row.deceased_date ?? ''}</td>
+                                            <td className="p-2">{row.familyName ?? ''}</td>
+                                            <td className="p-2">{row.deceasedName ?? ''}</td>
+                                            <td className="p-2">{row.deceasedDate ? new Intl.DateTimeFormat('en-US').format(new Date(row.deceasedDate)) : ''}</td>
                                             <td className="p-2">{row.address ?? ''}</td>
-                                            <td className="p-2">{row.contactNumber ?? row.contact_number ?? ''}</td>
+                                            <td className="p-2">{row.contactNumber ?? ''}</td>
                                             <td className="p-2"><StatusTag status={row.status ?? ''} />
                                     </td>
                                         </>
                                     )
                                 },
                                 Occupants: {
-                                    columns: ["", "Occupant ID", "Name", "Date of Interment", "Niche"],
+                                    columns: [
+                                        { label: "", key: "_select" },
+                                        { label: "Occupant ID", key: "id", type: 'number' },
+                                        { label: "Name", key: "name", type: 'text' },
+                                        { label: "Date of Interment", key: "intermentDate", type: 'date' },
+                                        { label: "Niche", key: "niche", type: 'text' }
+                                    ],
                                     toolbarButtons: [
                                         { label: 'Add Occupant', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
                                         { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
@@ -362,14 +431,20 @@ export default function DashboardPage() {
                                     rowRenderer: (row) => (
                                         <>
                                             <td className="p-2">#{(row.id ?? '').toString().padStart(3, "0")}</td>
-                                            <td className="p-2">{row.name ?? row.full_name ?? ''}</td>
-                                            <td className="p-2">{row.dateOfInterment ?? row.interment_date ?? ''}</td>
+                                            <td className="p-2">{row.name ?? ''}</td>
+                                            <td className="p-2">{row.intermentDate ? new Intl.DateTimeFormat('en-US').format(new Date(row.intermentDate)) : ''}</td>
                                             <td className="p-2">{row.niche ?? ''}</td>
                                         </>
                                     )   
                                 },
                                 Niches: {
-                                    columns: ["", "Niche ID", "Deceased's Name", "Location", "Status"],
+                                    columns: [
+                                        { label: "", key: "_select" },
+                                        { label: "Niche ID", key: "id", type: 'number' },
+                                        { label: "Deceased's Name", key: "name", type: 'text' },
+                                        { label: "Location", key: "location", type: 'text' },
+                                        { label: "Status", key: "status", type: 'text' }
+                                    ],
                                     toolbarButtons: [
                                         { label: 'Add Niche', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
                                         { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: () => {} },
@@ -381,6 +456,31 @@ export default function DashboardPage() {
                                             <td className="p-2">{row.name ?? row.deceased_name ?? ''}</td>
                                             <td className="p-2">{row.location ?? ''}</td>
                                             <td className="p-2"><StatusTag status={row.status ?? ''} /></td>
+                                        </>
+                                    )
+                                },
+                                Audit: {
+                                    columns: [
+                                        { label: "User", key: "user", type: 'text' },
+                                        { label: "Role", key: "role", type: 'text' },
+                                        { label: "IP Address", key: "ipAddress", type: 'text' },
+                                        { label: "Object ID", key: "objectId", type: 'text' },
+                                        { label: "Action", key: "action", type: 'text' },
+                                        { label: "Application", key: "app", type: 'text' },
+                                        { label: "URL", key: "path", type: 'text' },
+                                        { label: "Timestamp", key: "timestamp", type: 'date' },
+                                    ],
+                                    toolbarButtons: [],
+                                    rowRenderer: (row) => (
+                                        <>
+                                            <td className="p-2">{row.user ?? ''}</td>
+                                            <td className="p-2">{row.role ?? ''}</td>
+                                            <td className="p-2">{row.ipAddress ?? ''}</td>
+                                            <td className="p-2">{row.responseData?.id ?? ''}</td>
+                                            <td className="p-2">{row.action ?? ''}</td>
+                                            <td className="p-2">{row.app ?? ''}</td>
+                                            <td className="p-2">{row.path ?? ''}</td>
+                                            <td className="p-2">{row.timestamp ? new Intl.DateTimeFormat('en-US', {year:'numeric', month:'numeric',day:'numeric', hour:'numeric', minute:'numeric', second:'numeric'}).format(new Date(row.timestamp)) : ''}</td>
                                         </>
                                     )
                                 }
@@ -402,6 +502,7 @@ export default function DashboardPage() {
                                     onSelectAll={handleSelectAll}
                                     onSelectRow={handleSelectRow}
                                     getRowKey={(row) => row.id}
+                                    onFilterChange={(value) => setFilter(value)}
                                 >
                                     {cfg.rowRenderer}
                                 </TabContent>
