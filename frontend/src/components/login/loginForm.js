@@ -40,6 +40,7 @@ export default function LoginForm() {
                 sessionStorage.setItem('token', data.session_token);
                 sessionStorage.setItem('username', data.user.username);
                 sessionStorage.setItem('role', data.user.role);
+                sessionStorage.setItem('permissions', data.user.permissions);
                 navigate('/dashboard');
             } else {
                 setError(data.error || "Login failed");
