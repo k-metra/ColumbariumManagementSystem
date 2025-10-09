@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     # Custom apps
     'users',
     'roles',
+    'audit',
     'payments',
     'contacts',
     'occupants',
@@ -61,6 +62,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'audit.middleware.AuditMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -139,7 +141,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
 
-CORS_ALLOWED_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+]
+
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'Session-Token',
 ]

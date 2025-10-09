@@ -10,6 +10,16 @@ import CreateNewElement from "../components/dashboard/createNewElement";
 import EditElement from "../components/dashboard/editElement";
 import AccountModal from "../components/dashboard/accountModal";
 
+function getCsrf() {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.startsWith('csrftoken=')) {
+            return cookie.substring('csrftoken='.length, cookie.length);
+        }
+    }
+}
+
 export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const { username, setUsername } = useAuth();
@@ -35,7 +45,9 @@ export default function DashboardPage() {
                 headers: {
                     'Content-Type': 'application/json',
                     'Session-Token': sessionStorage.getItem('token'),
-                }
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`
+                },
+                credentials: 'include',
             }).then(response => {
                 if (!response.ok) {
                     throw new Error("Failed to fetch items");
@@ -75,8 +87,11 @@ export default function DashboardPage() {
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Token': sessionStorage.getItem('token'),
+                        'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                        'X-CSRFToken': getCsrf(),
                     },
-                    body: JSON.stringify({ element_ids: selectedElements })
+                    body: JSON.stringify({ element_ids: selectedElements }),
+                    credentials: 'include',
                 })
             } catch (Exception) {
                 console.log("Error deleting items: ", Exception);
@@ -101,8 +116,11 @@ export default function DashboardPage() {
                 headers: {
                     'Content-Type': 'application/json',
                     'Session-Token': sessionStorage.getItem('token'),
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                    'X-CSRFToken': getCsrf(),
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(data),
+                credentials: 'include',
             }).then(response => {
                 if (!response.ok) {
                     console.log("Failed to edit item")
@@ -142,8 +160,11 @@ export default function DashboardPage() {
                 headers: {
                     'Content-Type': 'application/json',
                     'Session-Token': sessionStorage.getItem('token'),
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                    'X-CSRFToken': getCsrf(),
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(data),
+                credentials: 'include',
             }).then(response => {
                 if (!response.ok) {
                     throw new Error("Failed to create item");

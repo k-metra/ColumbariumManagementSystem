@@ -23,6 +23,7 @@ export default function LoginForm() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(credentials),
+            credentials: 'include',
         })
         .then(response => response.json())
         .then(data => {
