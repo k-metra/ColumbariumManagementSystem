@@ -103,13 +103,13 @@ export default function TabContent({
             <div className="flex justify-center items-center flex-row gap-2">
                 <input value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} id="search" className="bg-slate-50 border border-black/10 rounded-lg self-center h-12 min-h-12 min-w-[60%] w-[60%] text-zinc-700 outline-none px-3" placeholder={placeholder}></input>
 
-                <div className="flex flex-col">
-                    <label htmlFor="filter" className="text-sm text-zinc-600 block">Filter by:</label>
+                <div className="flex flex-col justify-center -translate-y-3">
+                    <label htmlFor="filter" className="text-sm text-zinc-600 block mb-1">Filter by:</label>
                     <select
                         value={filterColumn}
                         onChange={(e) => { setFilterColumn(e.target.value); if (onFilterChange) onFilterChange(e.target.value); }}
                         name="filter"
-                        className="min-w-12 px-3 text-md py-3 rounded bg-[#fbfbfb] border border-black/30"
+                        className="min-w-12 px-3 text-md h-10 rounded bg-[#fbfbfb] border border-black/30"
                     >
                         <option value="all">All columns</option>
                         {filterableColumns.map(col => (
