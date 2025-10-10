@@ -302,6 +302,8 @@ export default function DashboardPage() {
                     <div className="sidebar bg-white w-[20%] h-full self-start flex flex-col mt-3 rounded-lg p-4 drop-shadow-md gap-1">
 
                         {/* Tabs */}
+                        <Tab onClick={() => handleTabSelect("Customers")} icon="fa-solid fa-users">Customers</Tab>
+
                         <Tab onClick={() => handleTabSelect("Payments")} icon="fa-solid fa-credit-card">Payments</Tab>
 
                         <Tab onClick={() => handleTabSelect("Contacts")} icon="fa-solid fa-address-book">Contacts</Tab>
@@ -328,6 +330,19 @@ export default function DashboardPage() {
                         {/* Dynamic Tab Content rendered from a small config to keep things DRY */}
                         {(() => {
                             const tabs = {
+                                Customers: {
+                                    columns: [
+                                        {label: "", key: "_select" },
+                                        { label: "Customer ID", key: "id", type: 'number' },
+                                        { label: "Full Name", key: "name", type: 'text' },
+                                        { label: "Contact Number", key: "contactNumber", type: 'text' },
+                                        { label: "Email", key: "email", type: 'text' },
+                                        { label: "Address", key: "address", type: 'text' },
+                                        { label: "Deceased's Name", key: "deceasedName", type: 'text' },
+                                        { label: "Date Deceased", key: "deceasedDate", type: 'date' },
+                                        { label: "Relationship to Deceased", key: "relationshipToDeceased", type: 'text' }
+                                    ]
+                                },
                                 Payments: {
                                     columns: [
                                         { label: "", key: "_select" },
