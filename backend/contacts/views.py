@@ -66,7 +66,7 @@ def create_contact(request):
                 serializer = ContactSerializer(data=request.data)
                 if serializer.is_valid():
                     serializer.save()
-                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                    return Response({"ids": [serializer.data["id"]]}, status=status.HTTP_201_CREATED)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
             return Response({"error": "You do not have permission to add records."}, status=status.HTTP_403_FORBIDDEN)
@@ -104,7 +104,7 @@ def edit_contact(request):
                 serializer = ContactSerializer(contact, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
-                    return Response(serializer.data, status=status.HTTP_200_OK)
+                    return Response({"ids": [serializer.data.id]}, status=status.HTTP_200_OK)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
             return Response({"error": "You do not have permission to edit records."}, status=status.HTTP_403_FORBIDDEN)
@@ -136,14 +136,13 @@ def delete_contact(request):
             if user.has_permission("delete_record") and user.has_permission("view_dashboard"):
 
                 for id in contacts:
-                    print("Deleting id:", id)
                     try:
                         contact = Contact.objects.get(id=id)
                         contact.delete()
                     except Contact.DoesNotExist:
                         return Response({"error": f"Contact record with id {id} not found."}, status=status.HTTP_404_NOT_FOUND)
 
-                return Response({"message": "Contact records deleted successfully."}, status=status.HTTP_200_OK)
+                return Response({"ids": contacts}, status=status.HTTP_200_OK)
 
             return Response({"error": "You do not have permission to delete records."}, status=status.HTTP_403_FORBIDDEN)
         except Session.DoesNotExist:

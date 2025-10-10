@@ -332,7 +332,7 @@ export default function DashboardPage() {
                                     columns: [
                                         { label: "", key: "_select" },
                                         { label: "Payment ID", key: "id", type: 'number' },
-                                        { label: "Payer Name", key: "payer", type: 'text' },
+                                        { label: "Customer Name", key: "payer", type: 'text' },
                                         { label: "Amount Paid", key: "amountPaid", type: 'number' },
                                         { label: "Amount Due", key: "amountDue", type: 'number' },
                                         { label: "Remaining Balance", key: "remainingBalance", type: 'number' },
@@ -448,7 +448,7 @@ export default function DashboardPage() {
                                             <td className="p-2">{row.user ?? ''}</td>
                                             <td className="p-2">{row.role ?? ''}</td>
                                             <td className="p-2">{row.ipAddress ?? ''}</td>
-                                            <td className="p-2">{row.responseData?.id ?? ''}</td>
+                                            <td className="p-2">{row.responseData?.ids?.join(', ') ?? ''}</td>
                                             <td className="p-2">{row.action ?? ''}</td>
                                             <td className="p-2">{row.app ?? ''}</td>
                                             <td className="p-2">{row.path ?? ''}</td>

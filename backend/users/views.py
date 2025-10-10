@@ -77,7 +77,7 @@ def create_user(request):
         if new_user.is_valid():
             new_user.save()
 
-            return Response({"message":"User created successfully.", "user": new_user.data, }, status=status.HTTP_201_CREATED)
+            return Response({"ids": [new_user.id]}, status=status.HTTP_201_CREATED)
         
         print(new_user.errors)
         return Response(new_user.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -134,7 +134,7 @@ def delete_user(request):
                     return Response({"error":f"User with ID {user_to_delete} not found."}, status=status.HTTP_404_NOT_FOUND)
 
             
-            return Response({"message":"User deleted successfully."}, status=status.HTTP_200_OK)
+            return Response({"ids": user_ids}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error":"User not found."}, status=status.HTTP_404_NOT_FOUND)
         
@@ -171,7 +171,7 @@ def edit_user(request):
 
         if serializer.is_valid():
             serializer.save()
-            return Response({"message":"User updated successfully.", "user": serializer.data}, status=status.HTTP_200_OK)
+            return Response({"ids": [serializer.data.id]}, status=status.HTTP_200_OK)
         
         print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

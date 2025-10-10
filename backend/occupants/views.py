@@ -52,7 +52,7 @@ def create_occupant(request):
                 serializer = OccupantSerializer(data=request.data)
                 if serializer.is_valid():
                     serializer.save()
-                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                    return Response({"ids": [serializer.data["id"]]}, status=status.HTTP_201_CREATED)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             return Response({"error": "You do not have permission to add records."}, status=status.HTTP_403_FORBIDDEN)
         except Session.DoesNotExist:    
@@ -86,7 +86,7 @@ def edit_occupant(request):
                 serializer = OccupantSerializer(occupant, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
-                    return Response(serializer.data, status=status.HTTP_200_OK)
+                    return Response({"ids": [serializer.data["id"]]}, status=status.HTTP_200_OK)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             return Response({"error": "You do not have permission to edit records."}, status=status.HTTP_403_FORBIDDEN)
         except Session.DoesNotExist:
@@ -123,7 +123,7 @@ def delete_occupant(request):
                     except Occupant.DoesNotExist:
                         return Response({"error": f"Occupant record with id {id} not found."}, status=status.HTTP_404_NOT_FOUND)
 
-                return Response({"message": "Occupant records deleted successfully."}, status=status.HTTP_200_OK)
+                return Response({"ids": element_ids}, status=status.HTTP_200_OK)
 
             return Response({"error": "You do not have permission to delete records."}, status=status.HTTP_403_FORBIDDEN)
         except Session.DoesNotExist:

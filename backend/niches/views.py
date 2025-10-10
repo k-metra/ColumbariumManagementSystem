@@ -66,7 +66,7 @@ def create_niche(request):
             serializer = NicheSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response({"ids": [serializer.data["id"]]}, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({'error': 'You do not have permission to create niches.'}, status=status.HTTP_403_FORBIDDEN)
@@ -104,7 +104,7 @@ def edit_niche(request):
             serializer = NicheSerializer(niche, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
+                return Response({"ids": [serializer.data["id"]]}, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({'error': 'You do not have permission to edit niches.'}, status=status.HTTP_403_FORBIDDEN)
@@ -141,7 +141,7 @@ def delete_niche(request):
             except Niche.DoesNotExist:
                 return Response({'error': 'Niche not found'}, status=status.HTTP_404_NOT_FOUND)
 
-            return Response({'message': 'Niche deleted successfully'}, status=status.HTTP_200_OK)
+            return Response({'ids': niche_ids}, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'You do not have permission to delete niches.'}, status=status.HTTP_403_FORBIDDEN)
     return Response({'error': 'Invalid request method'}, status=status.HTTP_400_BAD_REQUEST)
