@@ -63,6 +63,7 @@ function AppContent() {
 
           console.log("Authenticated2: ", authenticated);
         } else {
+          console.log(response.json());
           setAuthenticated(false);
           sessionStorage.removeItem('token');
           sessionStorage.removeItem('username');
