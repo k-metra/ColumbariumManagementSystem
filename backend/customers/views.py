@@ -76,7 +76,7 @@ def create_customer(request):
 
     if serializer.is_valid():
         serializer.save()
-        return Response({"id": serializer.data["id"]}, status=status.HTTP_201_CREATED)
+        return Response({"ids": [serializer.data["id"]]}, status=status.HTTP_201_CREATED)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -110,7 +110,7 @@ def update_customer(request):
 
     if serializer.is_valid():
         serializer.save()
-        return Response({"ids": serializer.data["id"]}, status=status.HTTP_200_OK)
+        return Response({"ids": [serializer.data["id"]]}, status=status.HTTP_200_OK)
 
     print(serializer.errors)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
