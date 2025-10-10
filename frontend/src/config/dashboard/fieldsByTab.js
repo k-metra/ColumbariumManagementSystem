@@ -29,4 +29,13 @@ export const fieldsByTab = {
                 { value: 'Reserved', label: 'Reserved' },
             ] },
         ],
+        Users: [
+            { name: 'username', label: 'Username', type: 'text',  },
+            { name: 'password', label: 'Password', type: 'password' },
+            { name: 'role', label: 'Role', type: 'select', options: [
+                { value: '', label: 'Select Role' },
+                { value: 'admin', label: 'Admin' },
+                { value: 'staff', label: 'Staff' },
+            ]},
+        ],
 }
