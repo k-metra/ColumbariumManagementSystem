@@ -28,17 +28,18 @@ export default function CreateNewElement({ tab, onCreate, fields }) {
     const fieldsToRender = fields || defaultFields[tab] || [];
 
     const handleChange = (name, value) => {
-
+        
         console.log('handleChange', name, value);
         setFormData((prev) => ({ ...prev, [name]: value }));
     }
 
     const renderField = (f) => {
-        const value = formData[f.name] ?? '';
+        const value = f.type === "select" ? f.options.find(opt => opt.value === formData[f.name]) || '' : formData[f.name] ?? '';
+
         const common = {
             name: f.name,
             value,
-            onChange: (e) => handleChange(f.name, e.value),
+            onChange: (e) => handleChange(f.name, e ? e.value ?? e.target.value : ''),
             className: 'border p-2 rounded'
         };
 
@@ -46,6 +47,7 @@ export default function CreateNewElement({ tab, onCreate, fields }) {
             <div key={f.name} className="flex flex-col gap-1">
                 <label htmlFor={f.name} className="text-sm text-black/70 block">{f.label}</label>
                 {f.type === 'select' ? (
+                    
                     <Select isClearable isSearchable options={f.options} {...common} />
                 ) : f.type === 'textarea' ? (
                     <textarea {...common} placeholder={f.placeholder || ''} />
