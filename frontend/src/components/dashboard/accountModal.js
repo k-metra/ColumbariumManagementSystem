@@ -22,8 +22,8 @@ export default function AccountModal({ username, role, isOpen }) {
                 <div className="text-lg font-semibold mb-0 text-zinc-700 flex flex-row justify-between">
                     <Icon icon="fa-regular fa-user" className="inline-block mr-2 text-zinc-700 text-[48px]" />
                     <div className="flex flex-col">
-                        <span className="text-md font-bold text-zinc-700">{username}</span>
-                        <span className="text-sm text-zinc-600 font-normal text-right">{role}</span>
+                        <span className="text-md font-bold max-w-[120px] truncate text-zinc-700">{username}</span>
+                        <span className="text-sm text-zinc-600 font-normal whitespace-normal break-words max-w-[120px] mr-4 text-right">{role}</span>
                     </div>
                 </div>
                 <div className="text-right self-end block mt-0">
