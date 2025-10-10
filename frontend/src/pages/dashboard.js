@@ -299,7 +299,7 @@ export default function DashboardPage() {
                 <div className="w-[100%] h-[85%] flex flex-row gap-3">
                     {/* Sidebar */}
                     { sidebarOpen &&
-                    <div className="sidebar bg-white w-[18%] h-full self-start flex flex-col mt-3 rounded-lg p-4 drop-shadow-md gap-1">
+                    <div className="sidebar bg-white w-[20%] h-full self-start flex flex-col mt-3 rounded-lg p-4 drop-shadow-md gap-1">
 
                         {/* Tabs */}
                         <Tab onClick={() => handleTabSelect("Payments")} icon="fa-solid fa-credit-card">Payments</Tab>
@@ -453,6 +453,27 @@ export default function DashboardPage() {
                                             <td className="p-2">{row.app ?? ''}</td>
                                             <td className="p-2">{row.path ?? ''}</td>
                                             <td className="p-2">{row.timestamp ? new Intl.DateTimeFormat('en-US', {year:'numeric', month:'numeric',day:'numeric', hour:'numeric', minute:'numeric', second:'numeric'}).format(new Date(row.timestamp)) : ''}</td>
+                                        </>
+                                    )
+                                },
+                                Users: {
+                                    columns: [
+                                        { label: "", key: "_select" },
+                                        { label: "User ID", key: "id", type: 'number' },
+                                        { label: "Username", key: "username", type: 'text' },
+                                        { label: "Role", key: "role", type: 'text' },
+                                    ],
+                                    toolbarButtons: [
+                                        { label: 'Add User', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
+                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: handleEditClick },
+                                        { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: handleRemoveSelected },
+                                    ],
+                                    rowRenderer: (row) => (
+                                        <>
+                                            
+                                            <td className="p-2">{row.id ?? ''}</td>
+                                            <td className="p-2">{row.username ?? ''}</td>
+                                            <td className="p-2">{row.role ?? ''}</td>
                                         </>
                                     )
                                 }
