@@ -12,6 +12,8 @@ import AccountModal from "../components/dashboard/accountModal";
 
 import { fieldsByTab } from "../config/dashboard/fieldsByTab";
 
+import Tab from '../components/dashboard/tab';
+
 function getCsrf() {
     const cookies = document.cookie.split(';');
     for (let i = 0; i < cookies.length; i++) {
@@ -300,18 +302,23 @@ export default function DashboardPage() {
                     <div className="sidebar bg-white w-[18%] h-full self-start flex flex-col mt-3 rounded-lg p-4 drop-shadow-md gap-1">
 
                         {/* Tabs */}
-                        <button onClick={() => handleTabSelect("Payments")} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-credit-card" className="mr-3"></Icon>Payments</button>
+                        <Tab onClick={() => handleTabSelect("Payments")} icon="fa-solid fa-credit-card">Payments</Tab>
 
-                        <button onClick={() => handleTabSelect("Contacts")} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-address-book" className="mr-3"></Icon>Contacts</button>
+                        <Tab onClick={() => handleTabSelect("Contacts")} icon="fa-solid fa-address-book">Contacts</Tab>
 
-                        <button onClick={ () => handleTabSelect("Occupants")} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-box-open" className="mr-3"></Icon>Occupants</button>
+                        <Tab onClick={() => handleTabSelect("Occupants")} icon="fa-solid fa-box-open">Occupants</Tab>
 
-                        <button onClick={() => handleTabSelect("Niches")} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-square-person-confined" className="mr-3"></Icon>Niches</button>
-                        
+                        <Tab onClick={() => handleTabSelect("Niches")} icon="fa-solid fa-square-person-confined">Niches</Tab>
+
                         {/* Audit Logs*/}
-                        {sessionStorage.getItem("permissions").split(",").includes("view_audit") && <button onClick={() => handleTabSelect("Audit")} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-users" className="mr-3"></Icon>Audit Logs</button>}
+                        {sessionStorage.getItem("permissions").split(",").includes("view_audit") && <Tab onClick={() => handleTabSelect("Audit")} icon="fa-solid fa-users">Audit Logs</Tab>}
 
-                        <button onClick={() => handleTabSelect("Report")} className="p-2 py-3 border-b border-black/5 transition-all duration-500 ease-out text-left rounded-sm hover:bg-black/10 text-zinc-700"><Icon icon="fa-solid fa-comments" className="mr-3"></Icon>Report</button>
+                        {/* User Account Control */}
+                        {sessionStorage.getItem("permissions").split(",").includes("manage_users") &&
+                        <Tab onClick={() => handleTabSelect("Users")} icon="fa-solid fa-user-shield">User Management</Tab>}
+
+
+                        <Tab onClick={() => handleTabSelect("Analytics")} icon="fa-solid fa-chart-simple">Analytics</Tab>
                     </div>}
 
                     
