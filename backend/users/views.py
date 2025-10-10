@@ -4,8 +4,11 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from users.models import User
 from user_sessions.models import Session
+from django.views.decorators.csrf import csrf_exempt, requires_csrf_token
 
-from .serializers import UserSerializer
+from .serializers import UserSerializer, UserCreateSerializer
+
+from user_sessions.utils import verify_session, get_user_from_session
 
 # Create your views here.
 @api_view(['POST'])
@@ -49,3 +52,126 @@ def logout_view(request):
         except Session.DoesNotExist:
             return Response({"error": "Invalid session."}, status=status.HTTP_401_UNAUTHORIZED)
     return Response({"error": "Authorization header missing."}, status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(['POST'])
+@requires_csrf_token
+def create_user(request):
+    if request.method == 'POST':
+        authorization_header = request.headers.get('Authorization')
+
+        is_session_valid = verify_session(authorization_header)
+
+        if not is_session_valid:
+            return Response({"error":"Session is invalid or expired."}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user_from_session(authorization_header)
+
+        if not user:
+            return Response({"error":f"No user associated with token {authorization_header} was found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if not user.has_permission("manage_users") or not user.has_permission("view_dashboard"):
+            return Response({"error":"You do not have permission to manage users."}, status=status.HTTP_403_FORBIDDEN)
+        
+        new_user = UserCreateSerializer(data=request.data)
+
+        if new_user.is_valid():
+            new_user.save()
+
+            return Response({"message":"User created successfully.", "user": new_user.data, }, status=status.HTTP_201_CREATED)
+        
+        print(new_user.errors)
+        return Response(new_user.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['GET'])
+def list_users(request):
+    if request.method == 'GET':
+        authorization_header = request.headers.get('Authorization')
+
+        is_session_valid = verify_session(authorization_header)
+
+        if not is_session_valid:
+            return Response({"error":"Session is invalid or expired."}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user_from_session(authorization_header)
+
+        if not user:
+            return Response({"error":f"No user associated with token {authorization_header} was found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if not user.has_permission("manage_users") or not user.has_permission("view_dashboard"):
+            return Response({"error":"You do not have permission to view users."}, status=status.HTTP_403_FORBIDDEN)
+        
+        users = User.objects.all()
+        serialized = UserSerializer(users, many=True)
+
+        return Response(serialized.data, status=status.HTTP_200_OK)
+    
+@api_view(['DELETE'])
+@requires_csrf_token
+def delete_user(request):
+    if request.method == 'DELETE':
+        authorization_header = request.headers.get('Authorization')
+
+        is_session_valid = verify_session(authorization_header)
+
+        if not is_session_valid:
+            return Response({"error":"Session is invalid or expired."}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user_from_session(authorization_header)
+
+        if not user:
+            return Response({"error":f"No user associated with token {authorization_header} was found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if not user.has_permission("manage_users") or not user.has_permission("view_dashboard"):
+            return Response({"error":"You do not have permission to delete users."}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            user_ids = request.data.get('element_ids')
+            for user_to_delete in user_ids:
+                try:
+                    user_instance = User.objects.get(id=user_to_delete)
+                    user_instance.delete()
+                except User.DoesNotExist:
+                    return Response({"error":f"User with ID {user_to_delete} not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            
+            return Response({"message":"User deleted successfully."}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"error":"User not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+@api_view(['PUT'])
+@requires_csrf_token
+def edit_user(request):
+    if request.method == 'PUT':
+        authorization_header = request.headers.get('Authorization')
+
+        is_session_valid = verify_session(authorization_header)
+
+        if not is_session_valid:
+            return Response({"error":"Session is invalid or expired."}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = get_user_from_session(authorization_header)
+
+        if not user:
+            return Response({"error":f"No user associated with token {authorization_header} was found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if not user.has_permission("manage_users") or not user.has_permission("view_dashboard"):
+            return Response({"error":"You do not have permission to edit users."}, status=status.HTTP_403_FORBIDDEN)
+        
+        user_id = request.data.get("id")
+
+        if not user_id:
+            return Response({"error":"User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user_to_edit = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error":"User not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = UserCreateSerializer(user_to_edit, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message":"User updated successfully.", "user": serializer.data}, status=status.HTTP_200_OK)
+        
+        print(serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
