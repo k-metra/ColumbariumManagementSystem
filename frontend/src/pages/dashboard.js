@@ -33,6 +33,8 @@ export default function DashboardPage() {
     const [openCreateModal, setOpenCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
 
+    const [tableLoading, setTableLoading] = useState(false);
+
     const [selectedElements, setSelectedElements] = useState([]);
     const [elementToEdit, setElementToEdit] = useState(null);
     const [elements, setElements] = useState([])
@@ -43,6 +45,7 @@ export default function DashboardPage() {
     const [customerOptions, setCustomerOptions] = useState([]);
     
     async function fetchItems(endpoint) {
+        setTableLoading(true);
         setElements([]);
         console.log(endpoint, " fetching items.");
         try {
@@ -73,8 +76,11 @@ export default function DashboardPage() {
                         const val = obj[k];
                         res[newKey] = normalizeObject(val);
                     });
+                    
                     return res;
                 }
+
+                setTableLoading(false);
 
                 const normalized = Array.isArray(data) ? data.map(normalizeObject) : data;
                 setElements(normalized);
@@ -301,6 +307,8 @@ export default function DashboardPage() {
                     const newKey = normalizeKey(k);
                     res[newKey] = normalizeObject(obj[k]);
                 });
+
+                setTableLoading(false);
                 return res;
             }
 
@@ -571,6 +579,8 @@ export default function DashboardPage() {
                             const cfg = tabs[selectedTab];
                             if (!cfg) return null;
 
+                            if (tableLoading) return <LoadingPage />;
+
                             return (
                                 <TabContent
                                     title={selectedTab}
@@ -588,6 +598,7 @@ export default function DashboardPage() {
                                     {cfg.rowRenderer}
                                 </TabContent>
                             )
+                            
                         })()}
                     </div>
                 </div>
