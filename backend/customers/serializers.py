@@ -5,3 +5,8 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = '__all__'
+
+class CustomerSerializerNames(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ['name']
