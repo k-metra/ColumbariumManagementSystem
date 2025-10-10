@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'audit',
     'payments',
     'contacts',
+    'customers',
     'occupants',
     'niches',
     'user_sessions',
