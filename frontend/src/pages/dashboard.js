@@ -10,6 +10,8 @@ import CreateNewElement from "../components/dashboard/createNewElement";
 import EditElement from "../components/dashboard/editElement";
 import AccountModal from "../components/dashboard/accountModal";
 
+import { fieldsByTab } from "../config/dashboard/fieldsByTab";
+
 function getCsrf() {
     const cookies = document.cookie.split(';');
     for (let i = 0; i < cookies.length; i++) {
@@ -183,14 +185,6 @@ export default function DashboardPage() {
 
         // cancel action (CreateNewElement calls onCreate(null) on cancel)
         if (data === null) return;
-
-        // naive local-create: assign a new id and append to elements.
-        // In a real app you'd POST to the API and refresh from server.
-       /* const maxId = elements.reduce((m, it) => Math.max(m, it.id || 0), 0);
-        const newItem = { id: maxId + 1, ...data };
-        setElements((prev) => [newItem, ...prev]);
-        setSelectedElements([]); */
-
         const endpoint = selectedTab.toLowerCase();
         try {
             // convert field names to snake_case before sending to API
@@ -269,37 +263,8 @@ export default function DashboardPage() {
         fetchItems(tab);
     }
 
-    // fields config for CreateNewElement to avoid duplicating form markup
-    const fieldsByTab = {
-        Payments: [
-            { name: 'payer', label: 'Payer Name', type: 'text', placeholder: 'Payer Name' },
-            { name: 'amountDue', label: 'Amount Due', type: 'number', placeholder: 'Amount Due' },
-            { name: 'amountPaid', label: 'Amount Paid', type: 'number', placeholder: 'Amount Paid' },
-            { name: 'maintenanceFee', label: 'Maintenance Fee', type: 'number', placeholder: 'Maintenance Fee' },
-            { name: 'paymentDate', label: 'Date Paid', type: 'date' },
-        ],
-        Contacts: [
-            { name: 'familyName', label: "Family Name", type: 'text' },
-            { name: 'deceasedName', label: "Deceased's Name", type: 'text' },
-            { name: 'deceasedDate', label: "Deceased Date", type: 'date' },
-            { name: 'address', label: "Address", type: 'textarea' },
-            { name: 'contactNumber', label: 'Contact Number', type: 'text' },
-        ],
-        Occupants: [
-            { name: 'name', label: 'Name', type: 'text' },
-            { name: 'intermentDate', label: 'Date of Interment', type: 'date' },
-            { name: 'niche', label: 'Niche', type: 'text' },
-        ],
-        Niches: [
-            { name: 'name', label: "Deceased's Name", type: 'text' },
-            { name: 'location', label: 'Location', type: 'text' },
-            { name: 'status', label: 'Status', type: 'select', options: [
-                { value: '', label: 'Select Status' },
-                { value: 'Available', label: 'Available' },
-                { value: 'Occupied', label: 'Occupied' },
-            ] },
-        ],
-    };
+    
+    
 
     const handleSelectRow = (id) => {
         console.log(id);
@@ -447,8 +412,8 @@ export default function DashboardPage() {
                                     ],
                                     toolbarButtons: [
                                         { label: 'Add Niche', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
-                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: () => {} },
-                                        { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: () => {} },
+                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: handleEditClick },
+                                        { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: handleRemoveSelected },
                                     ],
                                     rowRenderer: (row) => (
                                         <>
