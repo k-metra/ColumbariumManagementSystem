@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'payments',
     'contacts',
     'occupants',
+    'niches',
     'user_sessions',
 ]
 
