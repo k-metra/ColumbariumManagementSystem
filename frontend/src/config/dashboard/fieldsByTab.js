@@ -1,7 +1,16 @@
 // fields config for CreateNewElement to avoid duplicating form markup
 export const fieldsByTab = {
+        Customers: [
+            { name: 'name', label: 'Customer Name', type: 'text', placeholder: 'Customer Name' },
+            { name: 'contactNumber', label: 'Contact Number', type: 'text', placeholder: 'Contact Number' },
+            { name: 'email', label: 'Email', type: 'email', placeholder: 'Email' },
+            { name: 'address', label: "Address", type: 'textarea', placeholder: 'Address' },
+            { name: 'deceasedName', label: "Deceased's Name", type: 'text', placeholder: "Deceased's Name" },
+            { name: 'deceasedDate', label: "Deceased Date", type: 'date', placeholder: 'Deceased Date' },
+            { name: 'relationshipToDeceased', label: 'Relationship to Deceased', type: 'text', placeholder: 'Relationship to Deceased' },
+        ],
         Payments: [
-            { name: 'payer', label: 'Payer Name', type: 'text', placeholder: 'Payer Name' },
+            { name: 'payer', label: 'Customer Name', type: 'select', placeholder: 'Payer Name' },
             { name: 'amountDue', label: 'Amount Due', type: 'number', placeholder: 'Amount Due' },
             { name: 'amountPaid', label: 'Amount Paid', type: 'number', placeholder: 'Amount Paid' },
             { name: 'maintenanceFee', label: 'Maintenance Fee', type: 'number', placeholder: 'Maintenance Fee' },
