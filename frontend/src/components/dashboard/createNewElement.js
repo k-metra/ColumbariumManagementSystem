@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Select from 'react-select';
 
 /**
  * Generic modal form for creating elements. Use `fields` prop to drive the form.
@@ -27,6 +28,8 @@ export default function CreateNewElement({ tab, onCreate, fields }) {
     const fieldsToRender = fields || defaultFields[tab] || [];
 
     const handleChange = (name, value) => {
+
+        console.log('handleChange', name, value);
         setFormData((prev) => ({ ...prev, [name]: value }));
     }
 
@@ -35,7 +38,7 @@ export default function CreateNewElement({ tab, onCreate, fields }) {
         const common = {
             name: f.name,
             value,
-            onChange: (e) => handleChange(f.name, e.target.value),
+            onChange: (e) => handleChange(f.name, e.value),
             className: 'border p-2 rounded'
         };
 
@@ -43,11 +46,7 @@ export default function CreateNewElement({ tab, onCreate, fields }) {
             <div key={f.name} className="flex flex-col gap-1">
                 <label htmlFor={f.name} className="text-sm text-black/70 block">{f.label}</label>
                 {f.type === 'select' ? (
-                    <select {...common}>
-                        {(f.options || []).map((opt) => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                    </select>
+                    <Select isClearable isSearchable options={f.options} {...common} />
                 ) : f.type === 'textarea' ? (
                     <textarea {...common} placeholder={f.placeholder || ''} />
                 ) : (
@@ -59,9 +58,9 @@ export default function CreateNewElement({ tab, onCreate, fields }) {
 
     return (
         <div className="w-full h-full z-1000 fixed top-0 left-0 bg-black/30 justify-center items-center flex">
-            <div className="bg-white p-6 rounded-md shadow-md w-1/3">
+            <div className="bg-white max-h-[90%] overflow-y-auto p-6 rounded-md shadow-md w-1/3">
                 <div className="text-2xl font-bold mb-4 text-[rgb(60,60,60)] text-center">Create New {tab && tab.slice(0, -1)}</div>
-                <form onSubmit={(e) => { e.preventDefault(); onCreate(formData); }} className="flex flex-col gap-4">
+                <form onSubmit={(e) => { e.preventDefault(); console.log('CreateNewElement submit', formData); onCreate(formData); }} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-2">
                         {fieldsToRender.map(renderField)}
 
