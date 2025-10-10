@@ -27,7 +27,7 @@ function getCsrf() {
 export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const { username, setUsername } = useAuth();
-    const [selectedTab, setSelectedTab] = useState("Payments");
+    const [selectedTab, setSelectedTab] = useState("Customers");
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [openCreateModal, setOpenCreateModal] = useState(false);
@@ -40,6 +40,7 @@ export default function DashboardPage() {
     const [openAccountModal, setOpenAccountModal] = useState(false);
     const accountModalRef = useRef(null);
     const [filter, setFilter] = useState("");
+    const [customerOptions, setCustomerOptions] = useState([]);
     
     async function fetchItems(endpoint) {
         setElements([]);
@@ -60,7 +61,6 @@ export default function DashboardPage() {
                     return response.json();
                 }
             }).then(data => {
-                // normalize server response keys to camelCase for consistent UI usage
                 const normalizeKey = (s) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 
                 const normalizeObject = (obj) => {
@@ -104,9 +104,14 @@ export default function DashboardPage() {
 
     const handleEditClick = () => {
          if (selectedElements.length === 1) {
-            setElementToEdit(elements.find(e => e.id === selectedElements[0]))
-            setShowEditModal(true);
+            // ensure customer options are loaded when editing Payments
+            const prepareAndShow = async () => {
+                if (selectedTab === 'Payments') await fetchCustomerOptions();
+                setElementToEdit(elements.find(e => e.id === selectedElements[0]));
+                setShowEditModal(true);
             }
+            prepareAndShow();
+         }
         }
     
 
@@ -186,11 +191,16 @@ export default function DashboardPage() {
         setOpenCreateModal(false);
 
         // cancel action (CreateNewElement calls onCreate(null) on cancel)
+        console.log('handleCreate received data:', data);
         if (data === null) return;
         const endpoint = selectedTab.toLowerCase();
         try {
+            // ensure we have an object to convert
+            const safeData = data || {};
             // convert field names to snake_case before sending to API
-            const payload = convertKeysToSnake(data);
+            const payload = convertKeysToSnake(safeData);
+
+            console.log('Creating', endpoint, 'payload:', payload);
 
             await fetch("http://localhost:8000/api/" + endpoint + "/create-new/", {
                 method: 'POST',
@@ -263,6 +273,44 @@ export default function DashboardPage() {
         // fetch new items for the selected tab
         console.log("Switching to tab:", tab)
         fetchItems(tab);
+    }
+
+    // fetch customer names to use as options for Payments.payer select
+    const fetchCustomerOptions = async () => {
+        try {
+            const res = await fetch('http://localhost:8000/api/customers/list-all/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Session-Token': sessionStorage.getItem('token'),
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`
+                },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to fetch customers');
+            const data = await res.json();
+
+            // normalize keys (reuse normalizeKey logic)
+            const normalizeKey = (s) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+            const normalizeObject = (obj) => {
+                if (obj === null || obj === undefined) return obj;
+                if (Array.isArray(obj)) return obj.map(normalizeObject);
+                if (typeof obj !== 'object') return obj;
+                const res = {};
+                Object.keys(obj).forEach(k => {
+                    const newKey = normalizeKey(k);
+                    res[newKey] = normalizeObject(obj[k]);
+                });
+                return res;
+            }
+
+            const normalized = Array.isArray(data) ? data.map(normalizeObject) : [];
+                    const opts = normalized.map(c => ({ value: c.name, label: c.name || c.fullName || (`#${String(c.id).padStart(3, '0')}`) }));
+            setCustomerOptions(opts);
+        } catch (err) {
+            console.error('Error fetching customer options', err);
+            setCustomerOptions([]);
+        }
     }
 
     
@@ -341,7 +389,24 @@ export default function DashboardPage() {
                                         { label: "Deceased's Name", key: "deceasedName", type: 'text' },
                                         { label: "Date Deceased", key: "deceasedDate", type: 'date' },
                                         { label: "Relationship to Deceased", key: "relationshipToDeceased", type: 'text' }
-                                    ]
+                                    ],
+                                    toolbarButtons: [
+                                        { label: 'Add Customer', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
+                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
+                                        { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: (e) => { handleRemoveSelected(e) } },
+                                    ],
+                                    rowRenderer: (row) => (
+                                        <>
+                                            <td className="p-2">#{(row.id ?? '').toString().padStart(3, "0")}</td>
+                                            <td className="p-2">{row.name ?? ''}</td>
+                                            <td className="p-2">{row.contactNumber ?? ''}</td>
+                                            <td className="p-2">{row.email ?? ''}</td>
+                                            <td className="p-2">{row.address ?? ''}</td>
+                                            <td className="p-2">{row.deceasedName ?? ''}</td>
+                                            <td className="p-2">{row.deceasedDate ?? ''}</td>
+                                            <td className="p-2">{row.relationshipToDeceased ?? ''}</td>
+                                        </>
+                                    )
                                 },
                                 Payments: {
                                     columns: [
@@ -356,14 +421,22 @@ export default function DashboardPage() {
                                         { label: "Status", key: "status", type: 'text' }
                                     ],
                                     toolbarButtons: [
-                                        { label: 'Add Payment', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
+                                        { label: 'Add Payment', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: async () => { await fetchCustomerOptions(); setOpenCreateModal(true); } },
                                         { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
                                         { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: (e) => { handleRemoveSelected(e) } },
                                     ],
                                     rowRenderer: (row) => (
                                         <>
                         <td className="p-2">#{(row.id ?? '').toString().padStart(3, "0")}</td>
-                        <td className="p-2">{row.payer ?? row.payerName ?? ''}</td>
+                        <td className="p-2">{(function(){
+                            // prefer 'payer' field; it may contain either the customer id or the name
+                            const payerVal = row.payer ?? row.payer_id ?? row.payerId ?? null;
+                            // if payerVal matches an option value, show the option label
+                            const opt = customerOptions.find(o => String(o.value) === String(payerVal));
+                            if (opt) return opt.label;
+                            // otherwise show the raw value (name) if present
+                            return payerVal ?? '';
+                        })()}</td>
                         <td className="p-2">₱ {Number(row.amountPaid ?? row.amountPaid ?? row.amount_paid ?? 0).toLocaleString("en-US", {minimumFractionDigits: 2 })}</td>
                         <td className="p-2">₱ {Number(row.amountDue ?? row.amount_due ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
                         <td className="p-2">₱ {Number(row.remainingBalance ?? row.remaining_balance ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
@@ -520,9 +593,30 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            { openCreateModal && <CreateNewElement tab={selectedTab} onCreate={handleCreate} fields={fieldsByTab[selectedTab]} /> }
+            { openCreateModal && (() => {
+                let fieldsToPass = fieldsByTab[selectedTab];
+                if (selectedTab === 'Payments') {
+                    // ensure options are available
+                    const paymentsFields = (fieldsByTab.Payments || []).map(f => ({ ...f }));
+                    // replace payerId field with select options
+                    const baseOpts = customerOptions.length ? customerOptions : [{ value: '', label: 'No customers' }];
+                    const optsWithPrompt = [{ value: '', label: 'Select Customer' }, ...baseOpts];
+                    fieldsToPass = paymentsFields.map(f => f.name === 'payer' ? ({ ...f, type: 'select', options: optsWithPrompt }) : f);
+                }
+
+                return <CreateNewElement tab={selectedTab} onCreate={handleCreate} fields={fieldsToPass} />
+            })() }
             { /* EditElement modal can be added here similarly when needed */ }
-            { showEditModal && <EditElement tab={selectedTab} elementData={elementToEdit} fields={fieldsByTab[selectedTab]} onEdit={handleEdit} />}
+            { showEditModal && (() => {
+                let editFields = fieldsByTab[selectedTab];
+                if (selectedTab === 'Payments') {
+                    const paymentsFields = (fieldsByTab.Payments || []).map(f => ({ ...f }));
+                    const baseEditOpts = customerOptions.length ? customerOptions : [{ value: '', label: 'No customers' }];
+                    const editOptsWithPrompt = [{ value: '', label: 'Select Customer' }, ...baseEditOpts];
+                    editFields = paymentsFields.map(f => f.name === 'payer' ? ({ ...f, type: 'select', options: editOptsWithPrompt }) : f);
+                }
+                return <EditElement tab={selectedTab} elementData={elementToEdit} fields={editFields} onEdit={handleEdit} />
+            })()}
 
             <div ref={accountModalRef}>
                 <AccountModal isOpen={openAccountModal} username={username} role={sessionStorage.getItem("role") || 'Staff'} />
