@@ -43,6 +43,7 @@ export default function DashboardPage() {
     const accountModalRef = useRef(null);
     const [filter, setFilter] = useState("");
     const [customerOptions, setCustomerOptions] = useState([]);
+    const [nicheOptions, setNicheOptions] = useState([]);
     
     async function fetchItems(endpoint) {
         setTableLoading(true);
@@ -321,6 +322,47 @@ export default function DashboardPage() {
         }
     }
 
+    const fetchNicheOptions = async () => {
+        try {
+            const res = await fetch('http://localhost:8000/api/niches/list-all/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Session-Token': sessionStorage.getItem('token'),
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`
+                },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to fetch niches');
+            const data = await res.json();
+
+            const available = data.filter(n => n.status === 'Available');
+
+            // normalize keys (reuse normalizeKey logic)
+            const normalizeKey = (s) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+            const normalizeObject = (obj) => {
+                if (obj === null || obj === undefined) return obj;
+                if (Array.isArray(obj)) return obj.map(normalizeObject).filter(entry => entry.status === 'Available');
+                if (typeof obj !== 'object') return obj;
+                const res = {};
+                Object.keys(obj).forEach(k => {
+                    const newKey = normalizeKey(k);
+                    res[newKey] = normalizeObject(obj[k]);
+                });
+
+                console.log(res);
+                setTableLoading(false);
+                return res;
+            }
+            const normalized = Array.isArray(available) ? available.map(normalizeObject) : [];
+            const opts = normalized.map(n => ({ value: n.id, label: (`${n.location ?? 'No location'} - #${String(n.id).padStart(3, '0')}`) || (`#${String(n.id).padStart(3, '0')}`) }));
+            setNicheOptions(opts);
+        } catch (err) {
+            console.error('Error fetching niche options', err);
+            setNicheOptions([]);
+        }
+    }
+
     
     
 
@@ -475,6 +517,35 @@ export default function DashboardPage() {
                                     }
                                 },
 
+                                Transactions: {
+                                    columns: [
+                                        { label: "", key: "_select" },
+                                        { label: "Transaction #", key: "id", type: 'number' },
+                                        { label: "Account", key: "account", type: 'text' },
+                                        { label: "Date of Transaction", key:"date", type: 'date'},
+                                        { label: "Type of Transaction", key:"type", type: "text"},
+                                        { label: "Processed By", key:"processedBy", type:"text"},
+                                    ],
+
+                                    toolbarButtons: [
+                                        { label: "Add Transaction", icon: "fa-solid fa-plus", onClick: setOpenCreateModal },
+                                        { label: "Edit Selected", icon: "fa-solid fa-pen-to-square", onClick: handleEditClick },
+                                        { label: "Remove Selected", icon: "fa-solid fa-trash", onClick: handleRemoveSelected },
+                                    ],
+
+                                    rowRenderer: (row) => (
+                                        <>
+                                            <td className="p-2">{ row.id ? row.id.padStart(3, "0") : '' }</td>
+                                            <td className="p-2">{ row.account ?? '' }</td>
+                                            <td className="p-2">{ row.date ? new Intl.DateTimeFormat('en-US').format(new Date(row.date)) : '' }</td>
+                                            <td className="p-2">{ row.type ?? '' }</td>
+                                            <td className="p-2">{ row.processedBy ?? '' }</td>
+                                        </>
+                                    )
+
+
+                                },
+
                                 Contacts: {
                                     columns: [
                                         { label: "", key: "_select" },
@@ -512,7 +583,7 @@ export default function DashboardPage() {
                                         { label: "Niche", key: "niche", type: 'text' }
                                     ],
                                     toolbarButtons: [
-                                        { label: 'Add Occupant', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
+                                        { label: 'Add Occupant', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: async () => { await fetchNicheOptions(); setOpenCreateModal(true) }},
                                         { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
                                         { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: handleRemoveSelected },
                                     ],
@@ -633,6 +704,11 @@ export default function DashboardPage() {
                     const baseOpts = customerOptions.length ? customerOptions : [{ value: '', label: 'No customers' }];
                     const optsWithPrompt = [{ value: '', label: 'Select Customer' }, ...baseOpts];
                     fieldsToPass = paymentsFields.map(f => f.name === 'payer' ? ({ ...f, type: 'select', options: optsWithPrompt }) : f);
+                } else if (selectedTab === 'Occupants') {
+                    const occupantFields = (fieldsByTab.Occupants || []).map(f => ({ ...f }));
+                    const baseOpts = nicheOptions.length ? nicheOptions : [{ value: '', label: 'No niches' }];
+                    const optsWithPrompt = [{ value: '', label: 'Select Niche' }, ...baseOpts];
+                    fieldsToPass = occupantFields.map(f => f.name === 'nicheId' ? ({ ...f, type: 'select', options: optsWithPrompt }) : f);
                 }
 
                 return <CreateNewElement tab={selectedTab} onCreate={handleCreate} fields={fieldsToPass} />
