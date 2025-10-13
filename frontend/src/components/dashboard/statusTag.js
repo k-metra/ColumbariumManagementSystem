@@ -5,7 +5,7 @@ export default function StatusTag({status}) {
         "Pending": "bg-yellow-100 text-yellow-600",
         "Available": "bg-green-100 text-green-600",
         "Occupied": "bg-red-100 text-red-600",
-        "Reserved": "bg-yellow-100 text-yellow-600",
+        "Maintenance": "bg-yellow-100 text-yellow-600",
     }
 
     return (

@@ -29,13 +29,13 @@ export const fieldsByTab = {
             { name: 'niche', label: 'Niche', type: 'text' },
         ],
         Niches: [
-            { name: 'name', label: "Deceased's Name", type: 'text' },
+            { name: 'amount', label: "Amount", type: 'number' },
             { name: 'location', label: 'Location', type: 'text' },
             { name: 'status', label: 'Status', type: 'select', options: [
                 { value: '', label: 'Select Status' },
                 { value: 'Available', label: 'Available' },
                 { value: 'Occupied', label: 'Occupied' },
-                { value: 'Reserved', label: 'Reserved' },
+                { value: 'Maintenance', label: 'Maintenance' },
             ] },
         ],
         Users: [

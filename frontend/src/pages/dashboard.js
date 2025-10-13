@@ -352,7 +352,7 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                <div className="w-[100%] h-[85%] flex flex-row gap-3">
+                <div className="lg:w-[100%] md:w-[90%] h-[85%] flex flex-row gap-3">
                     {/* Sidebar */}
                     { sidebarOpen &&
                     <div className="sidebar bg-white w-[20%] h-full self-start flex flex-col mt-3 rounded-lg p-4 drop-shadow-md gap-1">
@@ -361,6 +361,8 @@ export default function DashboardPage() {
                         <Tab onClick={() => handleTabSelect("Customers")} icon="fa-solid fa-users">Customers</Tab>
 
                         <Tab onClick={() => handleTabSelect("Payments")} icon="fa-solid fa-credit-card">Payments</Tab>
+
+                        <Tab onClick={() => handleTabSelect("Accounts")} icon="fa-solid fa-wallet">Accounts</Tab>
 
                         <Tab onClick={() => handleTabSelect("Contacts")} icon="fa-solid fa-address-book">Contacts</Tab>
 
@@ -455,6 +457,24 @@ export default function DashboardPage() {
                                         </>
                                     )
                                 },
+
+                                Accounts: {
+                                    columns: [
+                                        { label: "", key: "_select" },
+                                        { label: "Account ID", key: "id", type: 'number' },
+                                        { label: "Customer Name", key: "customerName", type: 'text'}
+                                    ],
+                                    toolbarButtons: [
+                                        
+                                    ],
+                                    rowRenderer: (row) => {
+                                        <>
+                                            <td className="p-2">{ row.id ?? '' }</td>
+                                            <td className="p-2">{ row.customerName ?? '' }</td>
+                                        </>
+                                    }
+                                },
+
                                 Contacts: {
                                     columns: [
                                         { label: "", key: "_select" },
@@ -509,7 +529,7 @@ export default function DashboardPage() {
                                     columns: [
                                         { label: "", key: "_select" },
                                         { label: "Niche ID", key: "id", type: 'number' },
-                                        { label: "Deceased's Name", key: "name", type: 'text' },
+                                        { label: "Amount", key: "amount", type: 'number' },
                                         { label: "Location", key: "location", type: 'text' },
                                         { label: "Status", key: "status", type: 'text' }
                                     ],
@@ -521,7 +541,7 @@ export default function DashboardPage() {
                                     rowRenderer: (row) => (
                                         <>
                                             <td className="p-2">#{(row.id ?? '').toString().padStart(3, "0")}</td>
-                                            <td className="p-2">{row.name ?? row.deceased_name ?? ''}</td>
+                                            <td className="p-2">₱ {Number(row.amount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2})}</td>
                                             <td className="p-2">{row.location ?? ''}</td>
                                             <td className="p-2"><StatusTag status={row.status ?? ''} /></td>
                                         </>
