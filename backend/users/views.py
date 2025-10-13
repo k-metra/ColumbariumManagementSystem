@@ -77,7 +77,7 @@ def create_user(request):
         if new_user.is_valid():
             new_user.save()
 
-            return Response({"ids": [new_user.id]}, status=status.HTTP_201_CREATED)
+            return Response({"ids": [new_user.data.get('id')]}, status=status.HTTP_201_CREATED)
         
         print(new_user.errors)
         return Response(new_user.errors, status=status.HTTP_400_BAD_REQUEST)
