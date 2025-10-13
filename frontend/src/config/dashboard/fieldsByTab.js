@@ -26,7 +26,7 @@ export const fieldsByTab = {
         Occupants: [
             { name: 'name', label: 'Name', type: 'text' },
             { name: 'intermentDate', label: 'Date of Interment', type: 'date' },
-            { name: 'niche', label: 'Niche', type: 'text' },
+            { name: 'nicheId', label: 'Niche ID', type: 'select' },
         ],
         Niches: [
             { name: 'amount', label: "Amount", type: 'number' },
