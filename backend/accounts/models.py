@@ -1,10 +1,11 @@
 from django.db import models
+from customers.models import Customer
 
 # Create your models here.
 class Account(models.Model):
-    customer_name = models.CharField(max_length=100)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.customer_name
+        return self.customer
     
-    
+
