@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from user_sessions.models import Session
 from users.models import User
+from niches.models import Niche
 
 # Create your views here.
 @api_view(['GET'])
@@ -45,13 +46,19 @@ def create_occupant(request):
         
         try:
             session = Session.objects.get(session_token=session_token)
+            niche = Niche.objects.get(id=request.data.get("niche_id"))
+
 
             user = session.user
 
             if user.has_permission("add_record"):
-                serializer = OccupantSerializer(data=request.data)
+                new_data = request.data.copy()
+                new_data.pop("niche_id", None)
+                serializer = OccupantSerializer(data=new_data, context={'niche': niche})
                 if serializer.is_valid():
                     serializer.save()
+                    niche.status = "Occupied"
+                    niche.save()
                     return Response({"ids": [serializer.data["id"]]}, status=status.HTTP_201_CREATED)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             return Response({"error": "You do not have permission to add records."}, status=status.HTTP_403_FORBIDDEN)
@@ -59,6 +66,9 @@ def create_occupant(request):
             return Response({"error": "Invalid session token."}, status=status.HTTP_401_UNAUTHORIZED)
         except User.DoesNotExist:
             return Response({"error": "User associated with this session does not exist."}, status=status.HTTP_401_UNAUTHORIZED)
+        except Niche.DoesNotExist:
+            print("niche does not exist.")
+            return Response({"error": "Niche with the provided ID does not exist."}, status=status.HTTP_404_NOT_FOUND)
         
 @api_view(['PUT'])
 @requires_csrf_token
@@ -119,6 +129,9 @@ def delete_occupant(request):
                     print("Deleting id:", id)
                     try:
                         occupant = Occupant.objects.get(id=id)
+                        niche = occupant.niche
+                        niche.status = "Available"
+                        niche.save()
                         occupant.delete()
                     except Occupant.DoesNotExist:
                         return Response({"error": f"Occupant record with id {id} not found."}, status=status.HTTP_404_NOT_FOUND)
