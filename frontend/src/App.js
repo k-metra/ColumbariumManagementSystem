@@ -1,7 +1,7 @@
 
 import './App.css';
 
-import { useNavigate, Routes, Route} from 'react-router-dom'
+import { Navigate, useNavigate, Routes, Route} from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext';
 import { useEffect, Suspense } from 'react';
 
@@ -9,7 +9,9 @@ import { useEffect, Suspense } from 'react';
 import LoginPage from './pages/login';
 import DashboardPage from './pages/dashboard';
 import LoadingPage from './pages/loading';
+import HomePage from './pages/home';
 /* */
+
 
 
 const PublicRoute = ({ children }) => {
@@ -32,12 +34,12 @@ const PrivateRoute = ({ children }) => {
 
 const AuthRoute = ({ children }) => {
   const { authenticated } = useAuth();
-  const navig = useNavigate();
+  const navigate = useNavigate(); 
   console.log("Authenticated: ", authenticated);
 
   useEffect(() => {
     if (authenticated) {
-      navig('/dashboard/');
+      navigate('/dashboard/');
       return;
     }
   })
@@ -47,6 +49,7 @@ const AuthRoute = ({ children }) => {
 
 function AppContent() {
   const { authenticated, setAuthenticated } = useAuth();
+  const navigate = useNavigate();
   useEffect(() => {
     async function validateToken(token) {
       await fetch('http://localhost:8000/api/verify-token/', {
@@ -76,16 +79,14 @@ function AppContent() {
       // Validate token with backend 
       validateToken(token);
     }
-  })
+  }, [])
 
   return (
     <div className="App">
         <Routes>
           <Route path="" element={
-              <PublicRoute>
-                hi
-              </PublicRoute>
-          } ></Route>
+              <Navigate to="/home/" replace />
+          } />
 
           <Route path="/login/" element ={
               <AuthRoute>
@@ -93,6 +94,14 @@ function AppContent() {
                   <LoginPage />
                 </Suspense>
               </AuthRoute>
+          } />
+
+          <Route path="/home/" element = {
+              <PublicRoute>
+                <Suspense fallback={<LoadingPage />}>
+                  <HomePage />
+                </Suspense>
+              </PublicRoute>
           } />
 
 
@@ -111,6 +120,7 @@ function AppContent() {
 function App () {
   return (
       <AppContent />
+
   )
 }
 
