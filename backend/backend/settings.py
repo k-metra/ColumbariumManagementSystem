@@ -150,10 +150,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://columbariummanagementsystem.onrender.com",
+    "https://columbariummanagementsystembackend.onrender.com",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
+    "https://columbariummanagementsystem.onrender.com",
+    "https://columbariummanagementsystembackend.onrender.com",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
