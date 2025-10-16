@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-7e@&#-gd6*y&p2amz5h6fgjhg=f9zl_w+927n$zovrgx-c9759
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['https://columbariummanagementsystembackend.onrender.com']
+ALLOWED_HOSTS = ['columbariummanagementsystembackend.onrender.com']
 
 
 # Application definition
