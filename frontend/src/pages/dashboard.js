@@ -1,5 +1,7 @@
 import Icon from "../components/icon";
 
+import { Cookies } from "js-cookie";
+
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import StatusTag from '../components/dashboard/statusTag';
@@ -139,7 +141,7 @@ export default function DashboardPage() {
                         'Content-Type': 'application/json',
                         'Session-Token': sessionStorage.getItem('token'),
                         'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                        'X-CSRFToken': getCsrf(),
+                        'X-CSRFToken': Cookies.get('csrftoken'),
                     },
                     body: JSON.stringify({ element_ids: selectedElements }),
                     credentials: 'include',
@@ -171,7 +173,7 @@ export default function DashboardPage() {
                     'Content-Type': 'application/json',
                     'Session-Token': sessionStorage.getItem('token'),
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                    'X-CSRFToken': getCsrf(),
+                    'X-CSRFToken': Cookies.get('csrftoken'),
                 },
                 body: JSON.stringify(payload),
                 credentials: 'include',
@@ -215,7 +217,7 @@ export default function DashboardPage() {
                     'Content-Type': 'application/json',
                     'Session-Token': sessionStorage.getItem('token'),
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                    'X-CSRFToken': getCsrf(),
+                    'X-CSRFToken': Cookies.get('csrftoken'),
                 },
                 body: JSON.stringify(payload),
                 credentials: 'include',
