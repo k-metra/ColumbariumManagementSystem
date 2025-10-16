@@ -3,7 +3,6 @@
 Thumbs.db
 
 # Node / frontend
-frontend/node_modules/
 /.pnp
 .pnp.js
 
