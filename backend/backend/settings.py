@@ -165,4 +165,9 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     'Session-Token',
 ]
 
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = True
+
 AUTH_USER_MODEL = "users.User"
