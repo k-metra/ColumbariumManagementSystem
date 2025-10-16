@@ -44,8 +44,6 @@ dist/
 pip-wheel-metadata/
 
 # Django / Backend
-*.sqlite3
-db.sqlite3
 media/
 staticfiles/
 *.log
@@ -62,7 +60,6 @@ migrations/
 # Backend-specific (explicit)
 backend/__pycache__/
 backend/*.pyc
-backend/db.sqlite3
 
 # If you previously had repository-specific ignores, keep them below
 backend/roles/migrations/0001_initial.py
