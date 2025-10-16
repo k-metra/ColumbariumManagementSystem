@@ -3,7 +3,7 @@ import Icon from '../icon';
 export default function AccountModal({ username, role, isOpen }) {
     const handleLogout = async () => {
 
-        await fetch('https://columbariummanagementsystembackend.onrender.com//api/logout-api/', {
+        await fetch('https://columbariummanagementsystembackend.onrender.com/api/logout-api/', {
             method: 'DELETE',
             credentials: 'include',
             headers: {

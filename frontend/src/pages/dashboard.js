@@ -50,7 +50,7 @@ export default function DashboardPage() {
         setElements([]);
         console.log(endpoint, " fetching items.");
         try {
-            await fetch (`https://columbariummanagementsystembackend.onrender.com//api/${endpoint.toLowerCase()}/list-all/`, {
+            await fetch (`https://columbariummanagementsystembackend.onrender.com/api/${endpoint.toLowerCase()}/list-all/`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export default function DashboardPage() {
 
         if (confirmation) {
             try {
-                await fetch(`https://columbariummanagementsystembackend.onrender.com//api/${endpoint}/delete/`, {
+                await fetch(`https://columbariummanagementsystembackend.onrender.com/api/${endpoint}/delete/`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -165,7 +165,7 @@ export default function DashboardPage() {
             // convert field names to snake_case before sending to API
             const payload = convertKeysToSnake(data);
 
-            await fetch(`https://columbariummanagementsystembackend.onrender.com//api/${endpoint}/edit/?${endpoint.slice(0, -1)}_id=${elementToEdit.id}`, {
+            await fetch(`https://columbariummanagementsystembackend.onrender.com/api/${endpoint}/edit/?${endpoint.slice(0, -1)}_id=${elementToEdit.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ export default function DashboardPage() {
 
             console.log('Creating', endpoint, 'payload:', payload);
 
-            await fetch("https://columbariummanagementsystembackend.onrender.com//api/" + endpoint + "/create-new/", {
+            await fetch("https://columbariummanagementsystembackend.onrender.com/api/" + endpoint + "/create-new/", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -285,7 +285,7 @@ export default function DashboardPage() {
     // fetch customer names to use as options for Payments.payer select
     const fetchCustomerOptions = async () => {
         try {
-            const res = await fetch('https://columbariummanagementsystembackend.onrender.com//api/customers/list-all/', {
+            const res = await fetch('https://columbariummanagementsystembackend.onrender.com/api/customers/list-all/', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -324,7 +324,7 @@ export default function DashboardPage() {
 
     const fetchNicheOptions = async () => {
         try {
-            const res = await fetch('https://columbariummanagementsystembackend.onrender.com//api/niches/list-all/', {
+            const res = await fetch('https://columbariummanagementsystembackend.onrender.com/api/niches/list-all/', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

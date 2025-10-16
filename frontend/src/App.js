@@ -52,7 +52,7 @@ function AppContent() {
   const navigate = useNavigate();
   useEffect(() => {
     async function validateToken(token) {
-      await fetch('https://columbariummanagementsystembackend.onrender.com//api/verify-token/', {
+      await fetch('https://columbariummanagementsystembackend.onrender.com/api/verify-token/', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

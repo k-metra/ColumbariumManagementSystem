@@ -17,7 +17,7 @@ export default function LoginForm() {
     async function onSubmit(e) {
         e.preventDefault();
 
-        await fetch('https://columbariummanagementsystembackend.onrender.com//api/users/login-api/', {
+        await fetch('https://columbariummanagementsystembackend.onrender.com/api/users/login-api/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
