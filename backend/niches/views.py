@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from .models import Niche
-from django.views.decorators.csrf import csrf_exempt, requires_csrf_token
+from django.views.decorators.csrf import csrf_exempt, requires_csrf_token, ensure_csrf_cookie
 from .serializers import NicheSerializer
 
 from user_sessions.models import Session
@@ -12,6 +12,7 @@ from user_sessions.utils import verify_session, get_user_from_session
 # Create your views here.
 @api_view(['GET'])
 @csrf_exempt
+@ensure_csrf_cookie
 def list_niches(request):
     if request.method == 'GET':
 

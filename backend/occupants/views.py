@@ -4,7 +4,7 @@ from .serializers import *
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from django.views.decorators.csrf import csrf_exempt, requires_csrf_token
+from django.views.decorators.csrf import csrf_exempt, requires_csrf_token, ensure_csrf_cookie
 from django.utils import timezone
 
 from user_sessions.models import Session
@@ -13,7 +13,7 @@ from niches.models import Niche
 
 # Create your views here.
 @api_view(['GET'])
-@csrf_exempt
+@ensure_csrf_cookie
 def list_occupants(request):
     if request.method == 'GET':
         session_token = request.headers.get("Session-Token")

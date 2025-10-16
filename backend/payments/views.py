@@ -6,12 +6,12 @@ from .models import Payment
 from users.models import User
 from user_sessions.models import Session
 from .serializers import PaymentSerializer
-from django.views.decorators.csrf import csrf_exempt, requires_csrf_token
+from django.views.decorators.csrf import csrf_exempt, requires_csrf_token, ensure_csrf_cookie
 from django.utils import timezone
 
 # Create your views here.
 @api_view(['GET'])
-@csrf_exempt
+@ensure_csrf_cookie
 def list_payments(request):
     if request.method == 'GET':
         SESSION_TOKEN = request.headers.get("Session-Token")

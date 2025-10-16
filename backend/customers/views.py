@@ -2,7 +2,7 @@ from .models import Customer
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from django.views.decorators.csrf import csrf_exempt, requires_csrf_token
+from django.views.decorators.csrf import csrf_exempt, requires_csrf_token, ensure_csrf_cookie
 
 from .serializers import CustomerSerializer, CustomerSerializerNames
 
@@ -10,7 +10,7 @@ from user_sessions.utils import verify_session, get_user_from_session
 
 # Create your views here.
 @api_view(['GET'])
-@csrf_exempt
+@ensure_csrf_cookie
 def customer_list(request):
     authorization_header = request.headers.get("Authorization")
 

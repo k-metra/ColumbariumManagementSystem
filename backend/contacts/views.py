@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from django.views.decorators.csrf import csrf_exempt, requires_csrf_token
+from django.views.decorators.csrf import csrf_exempt, requires_csrf_token, ensure_csrf_cookie
 
 # Create your views here.
 from .models import Contact
@@ -12,7 +12,7 @@ from .serializers import ContactSerializer
 from django.utils import timezone
 
 @api_view(['GET'])
-@csrf_exempt
+@ensure_csrf_cookie
 def list_contacts(request):
     if request.method == 'GET':
         SESSION_TOKEN = request.headers.get("Session-Token")

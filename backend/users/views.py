@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from users.models import User
 from user_sessions.models import Session
-from django.views.decorators.csrf import csrf_exempt, requires_csrf_token
+from django.views.decorators.csrf import csrf_exempt, requires_csrf_token, ensure_csrf_cookie
 
 from .serializers import UserSerializer, UserCreateSerializer
 
@@ -83,6 +83,7 @@ def create_user(request):
         return Response(new_user.errors, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['GET'])
+@ensure_csrf_cookie
 def list_users(request):
     if request.method == 'GET':
         authorization_header = request.headers.get('Authorization')
