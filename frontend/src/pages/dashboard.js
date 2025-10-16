@@ -1,11 +1,11 @@
 import Icon from "../components/icon";
 
-import { Cookies } from "js-cookie";
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import StatusTag from '../components/dashboard/statusTag';
 import TabContent from '../components/dashboard/tabContent';
+import Cookies from 'js-cookie';
 
 import LoadingPage from './loading';
 import CreateNewElement from "../components/dashboard/createNewElement";
