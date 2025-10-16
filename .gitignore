@@ -6,8 +6,6 @@ Thumbs.db
 frontend/node_modules/
 /.pnp
 .pnp.js
-frontend/build/
-frontend/coverage/
 
 # Logs
 npm-debug.log*
