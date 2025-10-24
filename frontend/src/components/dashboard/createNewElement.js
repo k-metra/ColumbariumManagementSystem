@@ -33,6 +33,11 @@ export default function CreateNewElement({ tab, onCreate, fields }) {
         setFormData((prev) => ({ ...prev, [name]: value }));
     }
 
+    const handleFileChange = (name, file) => {
+        console.log('handleFileChange', name, file);
+        setFormData((prev) => ({ ...prev, [name]: file }));
+    }
+
     const renderField = (f) => {
         const value = f.type === "select" ? f.options.find(opt => opt.value === formData[f.name]) || '' : formData[f.name] ?? '';
 
@@ -51,6 +56,14 @@ export default function CreateNewElement({ tab, onCreate, fields }) {
                     <Select isClearable isSearchable options={f.options} {...common} />
                 ) : f.type === 'textarea' ? (
                     <textarea {...common} placeholder={f.placeholder || ''} />
+                ) : f.type === 'file' ? (
+                    <input 
+                        type="file" 
+                        name={f.name}
+                        accept={f.accept || '*'}
+                        onChange={(e) => handleFileChange(f.name, e.target.files[0])}
+                        className="border p-2 rounded"
+                    />
                 ) : (
                     <input {...common} type={f.type || 'text'} placeholder={f.placeholder || ''} />
                 )}
@@ -62,7 +75,26 @@ export default function CreateNewElement({ tab, onCreate, fields }) {
         <div className="w-full h-full z-1000 fixed top-0 left-0 bg-black/30 justify-center items-center flex">
             <div className="bg-white max-h-[90%] overflow-y-auto p-6 rounded-md shadow-md w-1/3">
                 <div className="text-2xl font-bold mb-4 text-[rgb(60,60,60)] text-center">Create New {tab && tab.slice(0, -1)}</div>
-                <form onSubmit={(e) => { e.preventDefault(); console.log('CreateNewElement submit', formData); onCreate(formData); }} className="flex flex-col gap-4">
+                <form onSubmit={(e) => { 
+                    e.preventDefault(); 
+                    console.log('CreateNewElement submit', formData);
+                    
+                    // Check if we have any file fields
+                    const hasFiles = Object.values(formData).some(value => value instanceof File);
+                    
+                    if (hasFiles) {
+                        // Create FormData for file uploads
+                        const form = new FormData();
+                        Object.keys(formData).forEach(key => {
+                            if (formData[key] !== null && formData[key] !== undefined && formData[key] !== '') {
+                                form.append(key, formData[key]);
+                            }
+                        });
+                        onCreate(form);
+                    } else {
+                        onCreate(formData);
+                    }
+                }} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-2">
                         {fieldsToRender.map(renderField)}
 
