@@ -9,6 +9,10 @@
   font-family: 'SF Pro Display', sans-serif;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body { 
   background: #f9fafb
 }
