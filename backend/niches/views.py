@@ -34,7 +34,7 @@ def list_niches(request):
         # If we reach this point, the user is authenticated
 
         if user.has_permission("view_records") and user.has_permission("view_dashboard"):
-            niches = Niche.objects.all()
+            niches = Niche.objects.prefetch_related('occupants').all()
             serializer = NicheSerializer(niches, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
