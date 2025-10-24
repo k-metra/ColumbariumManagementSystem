@@ -8,6 +8,7 @@ export const fieldsByTab = {
             { name: 'deceasedName', label: "Deceased's Name", type: 'text', placeholder: "Deceased's Name" },
             { name: 'deceasedDate', label: "Deceased Date", type: 'date', placeholder: 'Deceased Date' },
             { name: 'relationshipToDeceased', label: 'Relationship to Deceased', type: 'text', placeholder: 'Relationship to Deceased' },
+            { name: 'memorandumOfAgreement', label: 'Memorandum of Agreement', type: 'file', accept: 'image/*', placeholder: 'Upload memorandum (PNG/JPG)' },
         ],
         Payments: [
             { name: 'payer', label: 'Customer Name', type: 'select', placeholder: 'Payer Name' },
@@ -31,12 +32,12 @@ export const fieldsByTab = {
         Niches: [
             { name: 'amount', label: "Amount", type: 'number' },
             { name: 'location', label: 'Location', type: 'text' },
-            { name: 'status', label: 'Status', type: 'select', options: [
-                { value: '', label: 'Select Status' },
-                { value: 'Available', label: 'Available' },
-                { value: 'Occupied', label: 'Occupied' },
-                { value: 'Maintenance', label: 'Maintenance' },
+            { name: 'type', label: 'Type', type: 'select', options: [
+                { value: '', label: 'Select Type' },
+                { value: "Granite", label: "Granite"},
+                { value: "Glass", label: "Glass"},
             ] },
+            { name: 'maxOccupants', label: 'Max Occupants', type: 'number', default: 4 },
         ],
         Users: [
             { name: 'username', label: 'Username', type: 'text',  },

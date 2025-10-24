@@ -9,6 +9,7 @@ import LoadingPage from './loading';
 import CreateNewElement from "../components/dashboard/createNewElement";
 import EditElement from "../components/dashboard/editElement";
 import AccountModal from "../components/dashboard/accountModal";
+import CustomerModal from "../components/dashboard/customerModal";
 
 import { fieldsByTab } from "../config/dashboard/fieldsByTab";
 
@@ -32,6 +33,7 @@ export default function DashboardPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [openCreateModal, setOpenCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showCustomerModal, setShowCustomerModal] = useState(false);
 
     const [tableLoading, setTableLoading] = useState(false);
 
@@ -44,6 +46,7 @@ export default function DashboardPage() {
     const [filter, setFilter] = useState("");
     const [customerOptions, setCustomerOptions] = useState([]);
     const [nicheOptions, setNicheOptions] = useState([]);
+    const [customerInfo, setCustomerInfo] = useState({});
     
     async function fetchItems(endpoint) {
         setTableLoading(true);
@@ -109,6 +112,10 @@ export default function DashboardPage() {
         return res;
     }
 
+    const handleCloseCustomerModal = () => {
+        setShowCustomerModal(false);
+    }
+
     const handleEditClick = () => {
          if (selectedElements.length === 1) {
             // ensure customer options are loaded when editing Payments
@@ -162,18 +169,38 @@ export default function DashboardPage() {
         const endpoint = selectedTab.toLowerCase();
 
         try {
-            // convert field names to snake_case before sending to API
-            const payload = convertKeysToSnake(data);
+            let headers = {
+                'Session-Token': sessionStorage.getItem('token'),
+                'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                'X-CSRFToken': getCsrf(),
+            };
+            
+            let body;
+            
+            if (data instanceof FormData) {
+                // For file uploads, don't set Content-Type, let browser set it with boundary
+                body = data;
+                
+                // Convert keys to snake_case for FormData
+                const newFormData = new FormData();
+                for (let [key, value] of data.entries()) {
+                    const snakeKey = camelToSnake(key);
+                    newFormData.append(snakeKey, value);
+                }
+                body = newFormData;
+            } else {
+                // Regular JSON request
+                headers['Content-Type'] = 'application/json';
+                const payload = convertKeysToSnake(data);
+                body = JSON.stringify(payload);
+            }
+
+            console.log("Edit data type:", data instanceof FormData ? 'FormData' : 'JSON');
 
             await fetch(`http://localhost:8000/api/${endpoint}/edit/?${endpoint.slice(0, -1)}_id=${elementToEdit.id}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Session-Token': sessionStorage.getItem('token'),
-                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                    'X-CSRFToken': getCsrf(),
-                },
-                body: JSON.stringify(payload),
+                headers,
+                body,
                 credentials: 'include',
             }).then(response => {
                 if (!response.ok) {
@@ -202,22 +229,39 @@ export default function DashboardPage() {
         if (data === null) return;
         const endpoint = selectedTab.toLowerCase();
         try {
-            // ensure we have an object to convert
-            const safeData = data || {};
-            // convert field names to snake_case before sending to API
-            const payload = convertKeysToSnake(safeData);
+            let headers = {
+                'Session-Token': sessionStorage.getItem('token'),
+                'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                'X-CSRFToken': getCsrf(),
+            };
+            
+            let body;
+            
+            if (data instanceof FormData) {
+                // For file uploads, don't set Content-Type, let browser set it with boundary
+                body = data;
+                
+                // Convert keys to snake_case for FormData
+                const newFormData = new FormData();
+                for (let [key, value] of data.entries()) {
+                    const snakeKey = camelToSnake(key);
+                    newFormData.append(snakeKey, value);
+                }
+                body = newFormData;
+            } else {
+                // Regular JSON request
+                headers['Content-Type'] = 'application/json';
+                const safeData = data || {};
+                const payload = convertKeysToSnake(safeData);
+                body = JSON.stringify(payload);
+            }
 
-            console.log('Creating', endpoint, 'payload:', payload);
+            console.log('Creating', endpoint, 'data type:', data instanceof FormData ? 'FormData' : 'JSON');
 
             await fetch("http://localhost:8000/api/" + endpoint + "/create-new/", {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Session-Token': sessionStorage.getItem('token'),
-                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                    'X-CSRFToken': getCsrf(),
-                },
-                body: JSON.stringify(payload),
+                headers,
+                body,
                 credentials: 'include',
             }).then(response => {
                 if (!response.ok) {
@@ -336,7 +380,7 @@ export default function DashboardPage() {
             if (!res.ok) throw new Error('Failed to fetch niches');
             const data = await res.json();
 
-            const available = data.filter(n => n.status === 'Available');
+            const available = data.filter(n => n.status === 'Available' || n.status === 'Occupied');
 
             // normalize keys (reuse normalizeKey logic)
             const normalizeKey = (s) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
@@ -404,8 +448,6 @@ export default function DashboardPage() {
 
                         <Tab onClick={() => handleTabSelect("Payments")} icon="fa-solid fa-credit-card">Payments</Tab>
 
-                        <Tab onClick={() => handleTabSelect("Accounts")} icon="fa-solid fa-wallet">Accounts</Tab>
-
                         <Tab onClick={() => handleTabSelect("Contacts")} icon="fa-solid fa-address-book">Contacts</Tab>
 
                         <Tab onClick={() => handleTabSelect("Occupants")} icon="fa-solid fa-box-open">Occupants</Tab>
@@ -435,12 +477,13 @@ export default function DashboardPage() {
                                         {label: "", key: "_select" },
                                         { label: "Customer ID", key: "id", type: 'number' },
                                         { label: "Full Name", key: "name", type: 'text' },
-                                        { label: "Contact Number", key: "contactNumber", type: 'text' },
+                                        { label: "Information", key: "information", type: 'text'},
+                                       {/* { label: "Contact Number", key: "contactNumber", type: 'text' },
                                         { label: "Email", key: "email", type: 'text' },
                                         { label: "Address", key: "address", type: 'text' },
                                         { label: "Deceased's Name", key: "deceasedName", type: 'text' },
                                         { label: "Date Deceased", key: "deceasedDate", type: 'date' },
-                                        { label: "Relationship to Deceased", key: "relationshipToDeceased", type: 'text' }
+                                        { label: "Relationship to Deceased", key: "relationshipToDeceased", type: 'text' } */}
                                     ],
                                     toolbarButtons: [
                                         { label: 'Add Customer', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
@@ -450,13 +493,14 @@ export default function DashboardPage() {
                                     rowRenderer: (row) => (
                                         <>
                                             <td className="p-2">#{(row.id ?? '').toString().padStart(3, "0")}</td>
-                                            <td className="p-2">{row.name ?? ''}</td>
-                                            <td className="p-2">{row.contactNumber ?? ''}</td>
+                                            <td className="p-2">{row.name ?? '' }</td>
+                                            <td className="p-2"><button className="hover:bg-black/5 p-4 rounded-lg hover:underline" onClick={() => { setShowCustomerModal(true); setCustomerInfo(row); }}>Click to show</button></td>
+                                          {/* <td className="p-2">{row.contactNumber ?? ''}</td>
                                             <td className="p-2">{row.email ?? ''}</td>
                                             <td className="p-2">{row.address ?? ''}</td>
                                             <td className="p-2">{row.deceasedName ?? ''}</td>
                                             <td className="p-2">{row.deceasedDate ?? ''}</td>
-                                            <td className="p-2">{row.relationshipToDeceased ?? ''}</td>
+                                            <td className="p-2">{row.relationshipToDeceased ?? ''}</td> */}
                                         </>
                                     )
                                 },
@@ -498,23 +542,6 @@ export default function DashboardPage() {
                                     </td>
                                         </>
                                     )
-                                },
-
-                                Accounts: {
-                                    columns: [
-                                        { label: "", key: "_select" },
-                                        { label: "Account ID", key: "id", type: 'number' },
-                                        { label: "Customer Name", key: "customerName", type: 'text'}
-                                    ],
-                                    toolbarButtons: [
-                                        
-                                    ],
-                                    rowRenderer: (row) => {
-                                        <>
-                                            <td className="p-2">{ row.id ?? '' }</td>
-                                            <td className="p-2">{ row.customerName ?? '' }</td>
-                                        </>
-                                    }
                                 },
 
                                 Transactions: {
@@ -602,6 +629,8 @@ export default function DashboardPage() {
                                         { label: "Niche ID", key: "id", type: 'number' },
                                         { label: "Amount", key: "amount", type: 'number' },
                                         { label: "Location", key: "location", type: 'text' },
+                                        { label: "# Occupants", key:"occupantCount", type: 'number' },
+                                        { label: "Type", key: "type", type: 'text' },
                                         { label: "Status", key: "status", type: 'text' }
                                     ],
                                     toolbarButtons: [
@@ -614,6 +643,8 @@ export default function DashboardPage() {
                                             <td className="p-2">#{(row.id ?? '').toString().padStart(3, "0")}</td>
                                             <td className="p-2">₱ {Number(row.amount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2})}</td>
                                             <td className="p-2">{row.location ?? ''}</td>
+                                            <td className="p-2">{row.occupantCount ?? '0'}</td>
+                                            <td className="p-2">{row.type ?? ''}</td>
                                             <td className="p-2"><StatusTag status={row.status ?? ''} /></td>
                                         </>
                                     )
@@ -728,6 +759,8 @@ export default function DashboardPage() {
             <div ref={accountModalRef}>
                 <AccountModal isOpen={openAccountModal} username={username} role={sessionStorage.getItem("role") || 'Staff'} />
             </div>
+
+            {showCustomerModal && <CustomerModal onClose={handleCloseCustomerModal} info={customerInfo} />}
         </div>
     )
 }
