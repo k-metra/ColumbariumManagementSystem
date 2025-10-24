@@ -57,7 +57,7 @@ def create_occupant(request):
                 serializer = OccupantSerializer(data=new_data, context={'niche': niche})
                 if serializer.is_valid():
                     serializer.save()
-                    niche.status = "Occupied"
+
                     niche.save()
                     return Response({"ids": [serializer.data["id"]]}, status=status.HTTP_201_CREATED)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
