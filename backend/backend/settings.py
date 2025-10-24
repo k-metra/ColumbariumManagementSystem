@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-7e@&#-gd6*y&p2amz5h6fgjhg=f9zl_w+927n$zovrgx-c9759
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['columbariummanagementsystembackend.onrender.com']
+ALLOWED_HOSTS = ['columbariummanagementsystembackend.onrender.com', 'localhost']
 
 
 # Application definition
@@ -118,7 +118,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 STORAGES = {
-    # ...
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
@@ -142,6 +144,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Media files (User uploaded content)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
