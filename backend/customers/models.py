@@ -9,6 +9,12 @@ class Customer(models.Model):
     deceased_name = models.CharField(max_length=255, blank=True, null=True)
     deceased_date = models.DateField(blank=True, null=True)
     relationship_to_deceased = models.CharField(max_length=255, blank=True, null=True)
+    memorandum_of_agreement = models.ImageField(
+        upload_to='memorandums/', 
+        blank=True, 
+        null=True,
+        help_text='Upload memorandum of agreement (PNG or JPG format)'
+    )
 
     def __str__(self):
         return self.name
