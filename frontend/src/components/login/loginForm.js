@@ -4,11 +4,15 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
+import { IoMdEyeOff, IoMdEye } from "react-icons/io";
+
 export default function LoginForm() {
     const [credentials, setCredentials] = useState({username: "", password: ""});
     const { setUsername, setAuthenticated, setToken } = useAuth();
     const [error, setError] = useState("");
     const navigate = useNavigate();
+
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         setError("");
@@ -53,19 +57,24 @@ export default function LoginForm() {
     }
 
     return (
-        <div className="p-6 m-2 border rounded-md min-w-12 min-h-12 shadow-md bg-white">
-            <div className="text-2xl font-bold mb-4 text-[rgb(60,60,60)] text-center">Admin Login</div>
+        <div className="p-6 m-2 rounded-md min-w-12 min-h-12 z-20 bg-black/20 backdrop-blur-sm shadow-2xl drop-shadow-2xl">
+            <div className="text-2xl font-bold mb-4 text-white text-center">Login</div>
             <form onSubmit={onSubmit} className="flex flex-col gap-4">
                 { error !== "" && <span className="text-md text-red-400 text-center">{error}</span>}
                 <div id="field">
-                    <label className="block mb-1 text-sm text-zinc-600 " htmlFor="username">Username</label>
+                    <label className="block mb-1 text-sm text-white " htmlFor="username">Username</label>
                     <input onChange={(e) => {setCredentials({...credentials, username: e.target.value})}} className="w-full outline-none p-2 border rounded-md transition-all duration-300 ease-out shadow-inner hover:shadow-transparent focus:shadow-transparent focus:outline-blue-500" type="text" id="username" name="username" placeholder="Enter your username" required />
                 </div>
                 <div id="field">
-                    <label className="block mb-1 text-sm text-zinc-600 " htmlFor="password">Password</label>
-                    <input onChange={(e) => {setCredentials({...credentials, password: e.target.value})}} className="w-full outline-none p-2 border rounded-md transition-all duration-300 ease-out shadow-inner hover:shadow-transparent focus:shadow-transparent focus:outline-blue-500" type="password" id="password" name="password" placeholder="Enter your password" required />
+                    <label className="block mb-1 text-sm text-white " htmlFor="password">Password</label>
+                    <div className="relative">
+                        <button className="absolute" type="button" onClick={() => setShowPassword(!showPassword)} style={{ top: '50%', right: '10px', transform: 'translateY(-50%)' }}>
+                            { showPassword ? <IoMdEyeOff size={20} className="text-zinc-400 hover:text-zinc-600 transition-colors duration-200 ease-out" /> : <IoMdEye size={20} className="text-zinc-400 hover:text-zinc-600 transition-colors duration-200 ease-out" /> }
+                        </button>
+                        <input onChange={(e) => {setCredentials({...credentials, password: e.target.value})}} className="w-full outline-none p-2 border rounded-md transition-all duration-300 ease-out shadow-inner hover:shadow-transparent focus:shadow-transparent focus:outline-blue-500" type={showPassword ? "text" : "password"} id="password" name="password" placeholder="Enter your password" required />
+                    </div>
                 </div>
-                <button className="w-full drop-shadow-md p-2 bg-blue-500 text-white rounded-md transition-all duration-200 ease-out  hover:bg-blue-600 hover:-translate-y-1" type="submit">
+                <button className="w-full drop-shadow-md p-2 bg-blue-500 text-white rounded-md transition-all duration-200 ease-out  hover:bg-blue-500 hover:-translate-y-1" type="submit">
                     Login <Icon icon="fa-solid fa-arrow-right" className="inline ml-1" /> </button>
             </form>
         </div>
