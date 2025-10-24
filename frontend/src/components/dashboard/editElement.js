@@ -7,6 +7,11 @@ export default function EditElement({ tab, elementData, fields, onEdit }) {
         setFormData((prev) => ({ ...prev, [name]: value }));
     }
 
+    const handleFileChange = (name, file) => {
+        console.log('handleFileChange', name, file);
+        setFormData((prev) => ({ ...prev, [name]: file }));
+    }
+
     const renderField = (f) => {
         const value = formData[f.name] ?? '';
         const common = {
@@ -35,6 +40,21 @@ export default function EditElement({ tab, elementData, fields, onEdit }) {
                     </select>
                 ) : f.type === 'textarea' ? (
                     <textarea {...common} placeholder={f.placeholder || ''} />
+                ) : f.type === 'file' ? (
+                    <div className="flex flex-col gap-2">
+                        <input 
+                            type="file" 
+                            name={f.name}
+                            accept={f.accept || '*'}
+                            onChange={(e) => handleFileChange(f.name, e.target.files[0])}
+                            className="border p-2 rounded"
+                        />
+                        {elementData[f.name] && (
+                            <div className="text-sm text-gray-600">
+                                Current: <a href={elementData[f.name]} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">View current file</a>
+                            </div>
+                        )}
+                    </div>
                 ) : (
                     <input {...common} type={f.type || 'text'} placeholder={f.placeholder || ''} />
                 )}
@@ -44,10 +64,28 @@ export default function EditElement({ tab, elementData, fields, onEdit }) {
 
     return (
         <div className="fixed bg-black/30 flex flex-col justify-center items-center top-0 left-0 w-full h-full">
-            <div className="bg-white p-6 rounded shadow-lg w-96">
+            <div className="bg-white p-6 overflow-y-auto max-h-[90vh] rounded shadow-lg w-96">
 
                 <div className="text-2xl font-bold mb-4 text-[rgb(60,60,60)] text-center">Edit {tab && tab.slice(0, -1)}</div>
-                <form onSubmit={(e) => { e.preventDefault(); onEdit(formData); }} className="flex flex-col gap-4">
+                <form onSubmit={(e) => { 
+                    e.preventDefault(); 
+                    
+                    // Check if we have any file fields
+                    const hasFiles = Object.values(formData).some(value => value instanceof File);
+                    
+                    if (hasFiles) {
+                        // Create FormData for file uploads
+                        const form = new FormData();
+                        Object.keys(formData).forEach(key => {
+                            if (formData[key] !== null && formData[key] !== undefined && formData[key] !== '') {
+                                form.append(key, formData[key]);
+                            }
+                        });
+                        onEdit(form);
+                    } else {
+                        onEdit(formData);
+                    }
+                }} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-2">
                         {fields.map(renderField)}
                     </div>
