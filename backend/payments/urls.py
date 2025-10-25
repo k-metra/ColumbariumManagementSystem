@@ -8,4 +8,6 @@ urlpatterns = [
     path('edit/', edit_payment, name='edit_payment'),
     path('<int:payment_id>/details/', get_payment_details, name='get_payment_details'),
     path('<int:payment_id>/add-payment/', add_payment_detail, name='add_payment_detail'),
+    path('detail/<int:detail_id>/edit/', edit_payment_detail, name='edit_payment_detail'),
+    path('detail/<int:detail_id>/delete/', delete_payment_detail, name='delete_payment_detail'),
 ]
