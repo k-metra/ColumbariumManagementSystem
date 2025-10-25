@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'occupants',
     'niches',
     'user_sessions',
+    'analytics',
 ]
 
 MIDDLEWARE = [
