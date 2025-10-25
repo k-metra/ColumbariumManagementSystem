@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import StatusTag from '../components/dashboard/statusTag';
 import TabContent from '../components/dashboard/tabContent';
+import { FaEdit, FaTrash } from 'react-icons/fa';
 
 import LoadingPage from './loading';
 import CreateNewElement from "../components/dashboard/createNewElement";
@@ -11,6 +12,7 @@ import EditElement from "../components/dashboard/editElement";
 import AccountModal from "../components/dashboard/accountModal";
 import CustomerModal from "../components/dashboard/customerModal";
 import PaymentDetailModal from "../components/dashboard/paymentDetailModal";
+import Analytics from "../components/dashboard/analytics/Analytics";
 
 import { fieldsByTab } from "../config/dashboard/fieldsByTab";
 
@@ -52,6 +54,12 @@ export default function DashboardPage() {
     const [customerInfo, setCustomerInfo] = useState({});
     
     async function fetchItems(endpoint) {
+        // Skip fetching for Analytics tab since it handles its own data
+        if (endpoint === 'Analytics') {
+            setTableLoading(false);
+            return;
+        }
+
         setTableLoading(true);
         setElements([]);
         console.log(endpoint, " fetching items.");
@@ -200,26 +208,35 @@ export default function DashboardPage() {
 
             console.log("Edit data type:", data instanceof FormData ? 'FormData' : 'JSON');
 
-            await fetch(`http://localhost:8000/api/${endpoint}/edit/?${endpoint.slice(0, -1)}_id=${elementToEdit.id}`, {
+            const response = await fetch(`http://localhost:8000/api/${endpoint}/edit/?${endpoint.slice(0, -1)}_id=${elementToEdit.id}`, {
                 method: 'PUT',
                 headers,
                 body,
                 credentials: 'include',
-            }).then(response => {
-                if (!response.ok) {
-                    console.log("Failed to edit item")
-                }
+            });
 
-                return response.json();
-            }).then(data => {
-                console.log(data);
-            })
+            if (response.ok) {
+                const responseData = await response.json();
+                console.log(responseData);
+
+                // Update local state instead of refetching
+                setElements(prev => prev.map(element => 
+                    element.id === elementToEdit.id 
+                        ? { ...element, ...data } 
+                        : element
+                ));
+            } else {
+                console.log("Failed to edit item");
+                // On failure, still refetch to ensure data consistency
+                await fetchItems(selectedTab);
+            }
         } catch (Exception) {
-
+            console.error("Error editing item:", Exception);
+            // On error, refetch to ensure data consistency
+            await fetchItems(selectedTab);
         } finally {
             setSelectedElements([]);
             setElementToEdit(null);
-            fetchItems(selectedTab);
         }
     }
 
@@ -324,9 +341,11 @@ export default function DashboardPage() {
         setSelectedTab(tab);
         setSearchQuery("");
 
-        // fetch new items for the selected tab
+        // fetch new items for the selected tab (skip Analytics as it handles its own data)
         console.log("Switching to tab:", tab)
-        fetchItems(tab);
+        if (tab !== 'Analytics') {
+            fetchItems(tab);
+        }
     }
 
     // fetch customer names to use as options for Payments.payer select
@@ -409,7 +428,6 @@ export default function DashboardPage() {
             setNicheOptions([]);
         }
     }
-
     
     
 
@@ -521,7 +539,7 @@ export default function DashboardPage() {
                                         { label: 'Add Payment', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: async () => { await fetchCustomerOptions(); setOpenCreateModal(true); } },
                                         { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
                                         { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: (e) => { handleRemoveSelected(e) } },
-                                        { label: 'View Summary of Selected', icon: 'fa-solid fa-file-invoice', onClick: (e) => { } },
+                                      
                                     ],
                                     rowRenderer: (row) => (
                                         <>
@@ -707,6 +725,12 @@ export default function DashboardPage() {
                                             <td className="p-2">{row.role ?? ''}</td>
                                         </>
                                     )
+                                },
+                                Analytics: {
+                                    columns: [], // Analytics doesn't use the standard table format
+                                    toolbarButtons: [],
+                                    rowRenderer: () => null, // Not used for analytics
+                                    customComponent: Analytics // Use custom component instead
                                 }
                                 // Add other tabs here
                             }
@@ -715,6 +739,12 @@ export default function DashboardPage() {
                             if (!cfg) return null;
 
                             if (tableLoading) return <LoadingPage />;
+
+                            // Special handling for Analytics tab
+                            if (selectedTab === 'Analytics' && cfg.customComponent) {
+                                const AnalyticsComponent = cfg.customComponent;
+                                return <AnalyticsComponent />;
+                            }
 
                             return (
                                 <TabContent
