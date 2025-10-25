@@ -13,9 +13,7 @@ export const fieldsByTab = {
         Payments: [
             { name: 'payer', label: 'Customer Name', type: 'select', placeholder: 'Payer Name' },
             { name: 'amountDue', label: 'Amount Due', type: 'number', placeholder: 'Amount Due' },
-            { name: 'amountPaid', label: 'Amount Paid', type: 'number', placeholder: 'Amount Paid' },
             { name: 'maintenanceFee', label: 'Maintenance Fee', type: 'number', placeholder: 'Maintenance Fee' },
-            { name: 'paymentDate', label: 'Date Paid', type: 'date' },
         ],
         Contacts: [
             { name: 'familyName', label: "Family Name", type: 'text' },
