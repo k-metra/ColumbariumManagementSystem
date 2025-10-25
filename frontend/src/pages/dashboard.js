@@ -520,6 +520,7 @@ export default function DashboardPage() {
                                         { label: 'Add Payment', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: async () => { await fetchCustomerOptions(); setOpenCreateModal(true); } },
                                         { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
                                         { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: (e) => { handleRemoveSelected(e) } },
+                                        { label: 'View Summary of Selected', icon: 'fa-solid fa-file-invoice', onClick: (e) => { } },
                                     ],
                                     rowRenderer: (row) => (
                                         <>
