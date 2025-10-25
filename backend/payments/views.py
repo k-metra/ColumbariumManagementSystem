@@ -243,3 +243,68 @@ def add_payment_detail(request, payment_id):
         
     except Payment.DoesNotExist:
         return Response({"error": "Payment record not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['PUT'])
+@requires_csrf_token
+def edit_payment_detail(request, detail_id):
+    """Edit a specific payment detail"""
+    authorization_header = request.headers.get("Authorization")
+    if not authorization_header:
+        return Response({"error": "Authorization header is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    if not verify_session(authorization_header):
+        return Response({"error": "Invalid or expired session."}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    user = get_user_from_session(authorization_header)
+    if not user.has_permission("edit_record") or not user.has_permission("view_dashboard"):
+        return Response({"error": "You do not have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        payment_detail = PaymentDetail.objects.get(id=detail_id)
+        
+        # Validate payment amount
+        payment_amount = float(request.data.get('amount', 0))
+        if payment_amount <= 0:
+            return Response({"error": "Payment amount must be greater than 0."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update payment detail
+        data = request.data.copy()
+        serializer = PaymentDetailSerializer(payment_detail, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "payment_detail": serializer.data,
+                "message": "Payment detail updated successfully"
+            }, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    except PaymentDetail.DoesNotExist:
+        return Response({"error": "Payment detail not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['DELETE'])
+def delete_payment_detail(request, detail_id):
+    """Delete a specific payment detail"""
+    authorization_header = request.headers.get("Authorization")
+    if not authorization_header:
+        return Response({"error": "Authorization header is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    if not verify_session(authorization_header):
+        return Response({"error": "Invalid or expired session."}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    user = get_user_from_session(authorization_header)
+    if not user.has_permission("delete_record") or not user.has_permission("view_dashboard"):
+        return Response({"error": "You do not have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        payment_detail = PaymentDetail.objects.get(id=detail_id)
+        payment_detail.delete()
+        
+        return Response({
+            "message": "Payment detail deleted successfully"
+        }, status=status.HTTP_200_OK)
+        
+    except PaymentDetail.DoesNotExist:
+        return Response({"error": "Payment detail not found."}, status=status.HTTP_404_NOT_FOUND)
