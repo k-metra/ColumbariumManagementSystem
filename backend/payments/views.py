@@ -2,12 +2,13 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Payment
+from .models import Payment, PaymentDetail
 from users.models import User
 from user_sessions.models import Session
-from .serializers import PaymentSerializer
+from .serializers import PaymentSerializer, PaymentDetailSerializer
 from django.views.decorators.csrf import csrf_exempt, requires_csrf_token, ensure_csrf_cookie
 from django.utils import timezone
+from user_sessions.utils import verify_session, get_user_from_session
 
 # Create your views here.
 @api_view(['GET'])
@@ -30,7 +31,7 @@ def list_payments(request):
             # If session is valid, check user for permissions
             user = user_session.user
             if user.has_permission("view_records") and user.has_permission("view_dashboard"):
-                payments = Payment.objects.all().order_by('-payment_date')
+                payments = Payment.objects.all().order_by('-id')
 
                 serializer = PaymentSerializer(payments, many=True)
             
@@ -150,3 +151,95 @@ def edit_payment(request):
             return Response({"error": "Payment record not found."}, status=status.HTTP_404_NOT_FOUND)
         except Session.DoesNotExist:
             return Response({"error": "Invalid session token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+@api_view(['GET'])
+def get_payment_details(request, payment_id):
+    """Get all payment details for a specific payment"""
+    authorization_header = request.headers.get("Authorization")
+    if not authorization_header:
+        return Response({"error": "Authorization header is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    if not verify_session(authorization_header):
+        return Response({"error": "Invalid or expired session."}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    user = get_user_from_session(authorization_header)
+    if not user.has_permission("view_dashboard"):
+        return Response({"error": "You do not have permission to view this resource."}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        payment = Payment.objects.get(id=payment_id)
+        payment_details = payment.payment_details.all()
+        
+        # Return both payment info and details
+        payment_serializer = PaymentSerializer(payment)
+        details_serializer = PaymentDetailSerializer(payment_details, many=True)
+        
+        return Response({
+            "payment": payment_serializer.data,
+            "details": details_serializer.data,
+            "months_paid": payment.months_paid,
+            "can_add_payment": payment.remaining_balance > 0
+        }, status=status.HTTP_200_OK)
+        
+    except Payment.DoesNotExist:
+        return Response({"error": "Payment record not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@requires_csrf_token
+def add_payment_detail(request, payment_id):
+    """Add a new payment detail to an existing payment"""
+    authorization_header = request.headers.get("Authorization")
+    if not authorization_header:
+        return Response({"error": "Authorization header is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    if not verify_session(authorization_header):
+        return Response({"error": "Invalid or expired session."}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    user = get_user_from_session(authorization_header)
+    if not user.has_permission("add_record") or not user.has_permission("view_dashboard"):
+        return Response({"error": "You do not have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        payment = Payment.objects.get(id=payment_id)
+        
+        # Check if payment is already completed
+        if payment.remaining_balance <= 0:
+            return Response({
+                "error": "Payment is already completed. No additional payments can be added.",
+                "type": "payment_completed"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate payment amount
+        payment_amount = float(request.data.get('amount', 0))
+        if payment_amount <= 0:
+            return Response({"error": "Payment amount must be greater than 0."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if payment_amount > payment.remaining_balance:
+            return Response({
+                "error": f"Payment amount ({payment_amount}) cannot exceed remaining balance ({payment.remaining_balance}).",
+                "type": "amount_exceeds_balance"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create payment detail
+        data = request.data.copy()
+        data['payment'] = payment_id
+        data['created_by'] = user.username
+        
+        serializer = PaymentDetailSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            
+            # Return updated payment info
+            updated_payment = PaymentSerializer(payment).data
+            return Response({
+                "payment_detail": serializer.data,
+                "updated_payment": updated_payment,
+                "message": "Payment added successfully"
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+    except Payment.DoesNotExist:
+        return Response({"error": "Payment record not found."}, status=status.HTTP_404_NOT_FOUND)
