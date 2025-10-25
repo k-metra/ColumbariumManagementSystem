@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import brand_logo from '../assets/brand_logo.png';
 import header_bg from '../assets/header_bg.jpg';
 import landing_bg from '../assets/landing_bg.jpg';
@@ -5,6 +6,7 @@ import landing_bg from '../assets/landing_bg.jpg';
 
 
 import { IoMdMenu } from "react-icons/io";
+import { FaChevronUp } from "react-icons/fa";
 
 import NavItem from '../components/home/navItem';
 import NavBar from '../components/home/navbar';
@@ -28,8 +30,28 @@ import { FaPhoneFlip } from "react-icons/fa6";
 import fbpage_bg from '../assets/fbpage_bg.png';
 
 export default function HomePage() {
+    const [showScrollTop, setShowScrollTop] = useState(false);
 
     const NICHE_PDF_URL = "https://drive.google.com/drive/folders/1nzre21PcbtsEofHwm-AMZeO3haGa4GHU?usp=drive_link"
+
+    // Monitor scroll position to show/hide scroll-to-top button
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            setShowScrollTop(scrollTop > 300); // Show button after scrolling 300px
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Smooth scroll to top function
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    };
 
     const handleImageClick = (e) => {
         const src = e.target.src;
@@ -38,8 +60,9 @@ export default function HomePage() {
     }
 
     return (
-        <div className="w-screen h-screen overflow-y-auto flex-col flex drop-shadow-2xl shadow-2xl">
-            <header id="header" className="w-full md:min-h-20 md:py-10 bg-[#003366] flex items-center px-6 text-[#fbfbfb] justify-between">
+        <>
+        <div className="w-full min-h-screen overflow-x-hidden flex-col flex drop-shadow-2xl shadow-2xl">
+            <header id="header" className="w-full md:min-h-4 bg-[#003366] flex items-center px-6 text-[#fbfbfb] justify-between">
                 <div
                     className="absolute z-[1] top-0 left-0 inset-0 bg-right bg-no-repeat bg-contain opacity-30"
                     style={{ backgroundImage: `linear-gradient(to left, rgba(0,0,0,0) 25%, rgba(100,100,255,0.9) 65%), url(${header_bg})`
@@ -59,15 +82,15 @@ export default function HomePage() {
             </header>
 
                 <main id="body" className="min-h-full w-full bg-red-50 z-[50]">
-                    <section className="w-full h-full relative" id="landing">
+                    <section className="w-full min-h-screen relative" id="landing">
                         <div className="w-full h-full relative">
-                            <img className="w-full h-full object-cover" src={landing_bg} />
+                            <img className="w-full min-h-screen object-cover" src={landing_bg} />
                         </div>
 
                         <div className="absolute top-1/2 left-1/2 text-center z-[80] -translate-x-1/2 -translate-y-1/2 text-white">
                             <h1 className="font-semibold text-4xl text-shadow-lg/30">Columbarium and the Mortuary</h1>
                             <h2 className='text-lg text-shadow-lg/30'>Your loved ones deserve better peace and a place to rest. Let us provide them just that.</h2>
-                            <a href="https://www.facebook.com/mcjparish" className="inline-block mt-4 px-6 font-semibold cursor-pointer py-2 border text-[#003366] drop-shadow-2xl bg-[#FFD700] border-[#003366] rounded hover:bg-[#003366] hover:text-[#FFD700] hover:border-[#FFD700] transition">Learn More</a>
+                            <a href="#about" className="inline-block mt-4 px-6 font-semibold cursor-pointer py-2 border text-[#003366] drop-shadow-2xl bg-[#FFD700] border-[#003366] rounded hover:bg-[#003366] hover:text-[#FFD700] hover:border-[#FFD700] transition">Learn More</a>
                         </div>
                     </section>
                     <section id="about" className="w-full min-h-screen bg-[#f8f9fa] py-16 px-6 md:px-12 lg:px-20">
@@ -260,6 +283,22 @@ export default function HomePage() {
                         </div>
                     </section>
                 </main>
+
+                {/* Scroll to Top Button */}
+                
         </div>
+
+        <button
+                    onClick={scrollToTop}
+                    className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[#314e9e] text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out transform ${
+                        showScrollTop 
+                            ? 'translate-y-0 opacity-100 scale-100' 
+                            : 'translate-y-16 opacity-0 scale-75 pointer-events-none'
+                    } hover:scale-110 hover:-translate-y-1 active:scale-95`}
+                    aria-label="Scroll to top"
+                >
+                    <FaChevronUp className="w-5 h-5 mx-auto" />
+                </button>
+        </>
     )
 }
