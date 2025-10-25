@@ -10,6 +10,7 @@ import CreateNewElement from "../components/dashboard/createNewElement";
 import EditElement from "../components/dashboard/editElement";
 import AccountModal from "../components/dashboard/accountModal";
 import CustomerModal from "../components/dashboard/customerModal";
+import PaymentDetailModal from "../components/dashboard/paymentDetailModal";
 
 import { fieldsByTab } from "../config/dashboard/fieldsByTab";
 
@@ -34,6 +35,8 @@ export default function DashboardPage() {
     const [openCreateModal, setOpenCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showCustomerModal, setShowCustomerModal] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [selectedPaymentId, setSelectedPaymentId] = useState(null);
 
     const [tableLoading, setTableLoading] = useState(false);
 
@@ -510,10 +513,8 @@ export default function DashboardPage() {
                                         { label: "Payment ID", key: "id", type: 'number' },
                                         { label: "Customer Name", key: "payer", type: 'text' },
                                         { label: "Amount Paid", key: "amountPaid", type: 'number' },
-                                        { label: "Amount Due", key: "amountDue", type: 'number' },
                                         { label: "Remaining Balance", key: "remainingBalance", type: 'number' },
-                                        { label: "Maintenance Fee", key: "maintenanceFee", type: 'number' },
-                                        { label: "Date Paid", key: "paymentDate", type: 'date' },
+                                        { label: "Last Payment Date", key: "lastPaymentDate", type: 'date' },
                                         { label: "Status", key: "status", type: 'text' }
                                     ],
                                     toolbarButtons: [
@@ -534,13 +535,24 @@ export default function DashboardPage() {
                             // otherwise show the raw value (name) if present
                             return payerVal ?? '';
                         })()}</td>
-                        <td className="p-2">₱ {Number(row.amountPaid ?? row.amountPaid ?? row.amount_paid ?? 0).toLocaleString("en-US", {minimumFractionDigits: 2 })}</td>
-                        <td className="p-2">₱ {Number(row.amountDue ?? row.amount_due ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                        <td className="p-2">₱ {Number(row.amountPaid ?? row.amount_paid ?? 0).toLocaleString("en-US", {minimumFractionDigits: 2 })}</td>
                         <td className="p-2">₱ {Number(row.remainingBalance ?? row.remaining_balance ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                        <td className="p-2">₱ {Number(row.maintenanceFee ?? row.maintenance_fee ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
-                        <td className="p-2">{row.paymentDate ? new Intl.DateTimeFormat('en-US').format(new Date(row.paymentDate)) : ''}</td>
-                        <td className="p-2"><StatusTag status={row.status ?? row.state ?? ''} />
-                                    </td>
+                        <td className="p-2">{row.lastPaymentDate ? new Intl.DateTimeFormat('en-US').format(new Date(row.lastPaymentDate)) : 'No payments yet'}</td>
+                        <td className="p-2">
+                            <div className="flex items-center gap-4">
+                                <StatusTag status={row.status ?? row.state ?? ''} />
+                                <button 
+                                    className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedPaymentId(row.id);
+                                        setShowPaymentModal(true);
+                                    }}
+                                >
+                                    View Details
+                                </button>
+                            </div>
+                        </td>
                                         </>
                                     )
                                 },
@@ -762,6 +774,20 @@ export default function DashboardPage() {
             </div>
 
             {showCustomerModal && <CustomerModal onClose={handleCloseCustomerModal} info={customerInfo} />}
+            
+            {showPaymentModal && (
+                <PaymentDetailModal 
+                    paymentId={selectedPaymentId}
+                    onClose={() => {
+                        setShowPaymentModal(false);
+                        setSelectedPaymentId(null);
+                    }}
+                    onPaymentAdded={() => {
+                        // Refresh the payments list when a new payment is added
+                        fetchItems(selectedTab);
+                    }}
+                />
+            )}
         </div>
     )
 }
