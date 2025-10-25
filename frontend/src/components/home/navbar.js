@@ -21,7 +21,7 @@ const NavigationItems = {
 } 
 
 export default function NavBar() {
-    const [isOpen, setIsOpen] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
     const buttonRef = useRef(null);
     const sidebarRef = useRef(null);
     
