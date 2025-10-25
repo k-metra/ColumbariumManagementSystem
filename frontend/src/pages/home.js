@@ -227,7 +227,7 @@ export default function HomePage() {
                         </div>
                     </section>
 
-                    <section id="contact" className="w-full min-h-screen bg-blue-950 py-16 px-6 md:px-12 lg:px-20">
+                    <section id="contact" className="w-full min-h-screen bg-blue-950 pt-16 pb-4 px-6 md:px-12 lg:px-20">
                         <div className="max-w-7xl mx-auto text-center mb-8">
                             <h1 className="text-2xl md:text-4xl font-bold text-white mb-4">Contact Us</h1>
                         </div>
@@ -253,7 +253,11 @@ export default function HomePage() {
                                     allowFullScreen=""
                                     loading="lazy"
                                 ></iframe>
-                            </div>
+                        </div>
+
+                        <div className="w-full flex justify-end mt-20 mx-3">
+                            <a href="/dashboard" className="underline cursor-pointer text-white">→ Admin? Click here</a>
+                        </div>
                     </section>
                 </main>
         </div>
