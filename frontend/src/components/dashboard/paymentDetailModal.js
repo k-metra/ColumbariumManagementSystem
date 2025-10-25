@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { IoClose } from "react-icons/io5";
+import { FaEdit, FaTrash } from 'react-icons/fa';
 
 export default function PaymentDetailModal({ paymentId, onClose, onPaymentAdded }) {
     const [loading, setLoading] = useState(true);
     const [paymentInfo, setPaymentInfo] = useState(null);
     const [paymentDetails, setPaymentDetails] = useState([]);
     const [showAddPayment, setShowAddPayment] = useState(false);
+    const [editingPayment, setEditingPayment] = useState(null);
     const [newPayment, setNewPayment] = useState({
         amount: '',
         payment_date: new Date().toISOString().split('T')[0],
@@ -106,6 +108,91 @@ export default function PaymentDetailModal({ paymentId, onClose, onPaymentAdded 
         } catch (error) {
             console.error('Error adding payment:', error);
             setError('Failed to add payment');
+        }
+    };
+
+    const handleEditPaymentDetail = (detail) => {
+        setEditingPayment({
+            id: detail.id,
+            amount: detail.amount,
+            payment_date: detail.payment_date,
+            notes: detail.notes || ''
+        });
+    };
+
+    const handleUpdatePaymentDetail = async (e) => {
+        e.preventDefault();
+        setError('');
+
+        if (!editingPayment.amount || parseFloat(editingPayment.amount) <= 0) {
+            setError('Please enter a valid payment amount');
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://localhost:8000/api/payments/detail/${editingPayment.id}/edit/`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Session-Token': sessionStorage.getItem('token'),
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                    'X-CSRFToken': getCsrf(),
+                },
+                body: JSON.stringify({
+                    amount: editingPayment.amount,
+                    payment_date: editingPayment.payment_date,
+                    notes: editingPayment.notes
+                }),
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                // Update local state instead of refetching
+                setPaymentDetails(prev => prev.map(detail => 
+                    detail.id === editingPayment.id 
+                        ? { ...detail, ...editingPayment }
+                        : detail
+                ));
+                setEditingPayment(null);
+                // Refresh payment info to get updated totals
+                await fetchPaymentDetails();
+            } else {
+                const data = await response.json();
+                setError(data.error || 'Failed to update payment');
+            }
+        } catch (error) {
+            console.error('Error updating payment:', error);
+            setError('Failed to update payment');
+        }
+    };
+
+    const handleDeletePaymentDetail = async (detailId) => {
+        const confirmation = window.confirm('Are you sure you want to delete this payment detail? This action cannot be undone.');
+        
+        if (!confirmation) return;
+
+        try {
+            const response = await fetch(`http://localhost:8000/api/payments/detail/${detailId}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'Session-Token': sessionStorage.getItem('token'),
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                    'X-CSRFToken': getCsrf(),
+                },
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                // Remove from local state instead of refetching
+                setPaymentDetails(prev => prev.filter(detail => detail.id !== detailId));
+                // Refresh payment info to get updated totals
+                await fetchPaymentDetails();
+            } else {
+                setError('Failed to delete payment detail');
+            }
+        } catch (error) {
+            console.error('Error deleting payment detail:', error);
+            setError('Failed to delete payment detail');
         }
     };
 
@@ -287,23 +374,98 @@ export default function PaymentDetailModal({ paymentId, onClose, onPaymentAdded 
                                                 <th className="border border-gray-300 px-4 py-2 text-left">Amount</th>
                                                 <th className="border border-gray-300 px-4 py-2 text-left">Added By</th>
                                                 <th className="border border-gray-300 px-4 py-2 text-left">Notes</th>
+                                                <th className="border border-gray-300 px-4 py-2 text-left">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {paymentDetails.map((detail, index) => (
                                                 <tr key={detail.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                                    <td className="border border-gray-300 px-4 py-2">
-                                                        {formatDate(detail.payment_date)}
-                                                    </td>
-                                                    <td className="border border-gray-300 px-4 py-2 font-medium">
-                                                        {formatCurrency(detail.amount)}
-                                                    </td>
-                                                    <td className="border border-gray-300 px-4 py-2">
-                                                        {detail.created_by || 'System'}
-                                                    </td>
-                                                    <td className="border border-gray-300 px-4 py-2">
-                                                        {detail.notes || '-'}
-                                                    </td>
+                                                    {editingPayment && editingPayment.id === detail.id ? (
+                                                        // Edit mode
+                                                        <>
+                                                            <td className="border border-gray-300 px-2 py-2">
+                                                                <input
+                                                                    type="date"
+                                                                    value={editingPayment.payment_date}
+                                                                    onChange={(e) => setEditingPayment({...editingPayment, payment_date: e.target.value})}
+                                                                    className="w-full border rounded px-2 py-1 text-sm"
+                                                                />
+                                                            </td>
+                                                            <td className="border border-gray-300 px-2 py-2">
+                                                                <input
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    value={editingPayment.amount}
+                                                                    onChange={(e) => setEditingPayment({...editingPayment, amount: e.target.value})}
+                                                                    className="w-full border rounded px-2 py-1 text-sm"
+                                                                />
+                                                            </td>
+                                                            <td className="border border-gray-300 px-2 py-2">
+                                                                {detail.created_by || 'System'}
+                                                            </td>
+                                                            <td className="border border-gray-300 px-2 py-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingPayment.notes}
+                                                                    onChange={(e) => setEditingPayment({...editingPayment, notes: e.target.value})}
+                                                                    className="w-full border rounded px-2 py-1 text-sm"
+                                                                    placeholder="Notes..."
+                                                                />
+                                                            </td>
+                                                            <td className="border border-gray-300 px-2 py-2">
+                                                                <div className="flex items-center gap-1">
+                                                                    <button
+                                                                        onClick={handleUpdatePaymentDetail}
+                                                                        className="p-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-xs"
+                                                                        title="Save"
+                                                                    >
+                                                                        ✓
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setEditingPayment(null)}
+                                                                        className="p-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors text-xs"
+                                                                        title="Cancel"
+                                                                    >
+                                                                        ✕
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </>
+                                                    ) : (
+                                                        // Display mode
+                                                        <>
+                                                            <td className="border border-gray-300 px-4 py-2">
+                                                                {formatDate(detail.payment_date)}
+                                                            </td>
+                                                            <td className="border border-gray-300 px-4 py-2 font-medium">
+                                                                {formatCurrency(detail.amount)}
+                                                            </td>
+                                                            <td className="border border-gray-300 px-4 py-2">
+                                                                {detail.created_by || 'System'}
+                                                            </td>
+                                                            <td className="border border-gray-300 px-4 py-2">
+                                                                {detail.notes || '-'}
+                                                            </td>
+                                                            <td className="border border-gray-300 px-4 py-2">
+                                                                <div className="flex items-center gap-1">
+                                                                    <button
+                                                                        onClick={() => handleEditPaymentDetail(detail)}
+                                                                        className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                                                        title="Edit Payment"
+                                                                    >
+                                                                        <FaEdit size={10} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDeletePaymentDetail(detail.id)}
+                                                                        className="p-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                                                                        title="Delete Payment"
+                                                                    >
+                                                                        <FaTrash size={10} />
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </>
+                                                    )}
                                                 </tr>
                                             ))}
                                         </tbody>
