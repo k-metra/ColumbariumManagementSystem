@@ -43,7 +43,72 @@ export default function CustomerModal({ info, onClose }) {
         // If it's already a full URL, return as is
         if (relativePath.startsWith('http')) return relativePath;
         // Otherwise, construct full URL with backend server
-        return `http://72.61.149.6${relativePath}`;
+        return `https://mcj-parish.hopto.org${relativePath}`;
+    };
+
+    // Helper function to determine file type
+    const getFileType = (filePath) => {
+        if (!filePath) return null;
+        const extension = filePath.toLowerCase().split('.').pop();
+        const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
+        const pdfExtensions = ['pdf'];
+        
+        if (imageExtensions.includes(extension)) return 'image';
+        if (pdfExtensions.includes(extension)) return 'pdf';
+        return 'unknown';
+    };
+
+    // Helper function to render file content based on type
+    const renderFileContent = (filePath, fileUrl) => {
+        const fileType = getFileType(filePath);
+        
+        switch (fileType) {
+            case 'image':
+                return (
+                    <div className="flex justify-center mt-4">
+                        <img 
+                            src={fileUrl} 
+                            alt="Memorandum of Agreement" 
+                            className="max-h-[400px] object-contain cursor-pointer border" 
+                            onClick={handleImageClick}
+                        />
+                    </div>
+                );
+            case 'pdf':
+                return (
+                    <div className="flex flex-col items-center mt-4">
+                        <iframe
+                            src={fileUrl}
+                            className="w-full h-[500px] border"
+                            title="Memorandum of Agreement PDF"
+                        />
+                        <a 
+                            href={fileUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                        >
+                            Open PDF in New Tab
+                        </a>
+                    </div>
+                );
+            default:
+                return (
+                    <div className="flex flex-col items-center mt-4">
+                        <div className="text-center text-zinc-600 mb-2">
+                            File type not supported for preview
+                        </div>
+                        <a 
+                            href={fileUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                        >
+                            Download File
+                        </a>
+                    </div>
+                );
+        }
     };
 
     const memorandumPath = info.memorandumOfAgreement || info.memorandum_of_agreement;
@@ -91,9 +156,7 @@ export default function CustomerModal({ info, onClose }) {
                 {/* Memorandum of Agreement here */}
                 {
                     memorandumUrl ? (
-                        <div className="flex justify-center mt-4">
-                            <img src={memorandumUrl} alt="Memorandum of Agreement" className="max-h-[400px] object-contain cursor-pointer border" onClick={handleImageClick}/>
-                        </div>
+                        renderFileContent(memorandumPath, memorandumUrl)
                     ) : (
                         <div className="text-center text-zinc-600 mt-4">No Memorandum of Agreement Uploaded.</div>
                     )
