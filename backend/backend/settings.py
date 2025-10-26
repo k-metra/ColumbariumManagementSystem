@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-7e@&#-gd6*y&p2amz5h6fgjhg=f9zl_w+927n$zovrgx-c9759
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['columbariummanagementsystembackend.onrender.com', 'localhost']
+ALLOWED_HOSTS = ['72.61.149.6', 'localhost', '127.0.0.1', '*']
 
 
 # Application definition
@@ -62,7 +62,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',  # Disabled for API
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -157,12 +157,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "http://72.61.149.6",
     "https://columbariummanagementsystem.onrender.com",
     "https://columbariummanagementsystembackend.onrender.com",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
+    "http://72.61.149.6",
     "https://columbariummanagementsystem.onrender.com",
     "https://columbariummanagementsystembackend.onrender.com",
 ]
@@ -172,10 +174,24 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     'Session-Token',
 ]
 
-CSRF_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_HTTPONLY = False
 
 AUTH_USER_MODEL = "users.User"
+
+# Completely disable CSRF for API
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_NAME = None
+
+# Force disable CSRF globally
+CSRF_TRUSTED_ORIGINS = []
+CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'
+
+# REST Framework settings to disable CSRF
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_PERMISSION_CLASSES': [],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+}
