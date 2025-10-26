@@ -13,7 +13,6 @@ from niches.models import Niche
 
 # Create your views here.
 @api_view(['GET'])
-@ensure_csrf_cookie
 def list_occupants(request):
     if request.method == 'GET':
         session_token = request.headers.get("Session-Token")
@@ -37,7 +36,7 @@ def list_occupants(request):
             return Response({"error": "User associated with this session does not exist."}, status=status.HTTP_401_UNAUTHORIZED)
     
 @api_view(['POST'])
-@requires_csrf_token
+@csrf_exempt
 def create_occupant(request):
     if request.method == 'POST':
         session_token = request.headers.get("Session-Token")
@@ -71,7 +70,7 @@ def create_occupant(request):
             return Response({"error": "Niche with the provided ID does not exist."}, status=status.HTTP_404_NOT_FOUND)
         
 @api_view(['PUT'])
-@requires_csrf_token
+@csrf_exempt
 def edit_occupant(request):
     if request.method == "PUT":
         session_token = request.headers.get("Session-Token")
@@ -105,6 +104,7 @@ def edit_occupant(request):
             return Response({"error": "User associated with this session does not exist."}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['DELETE'])
+@csrf_exempt
 def delete_occupant(request):
     if request.method == 'DELETE':
         element_ids = request.data.get("element_ids")

@@ -12,7 +12,6 @@ from .serializers import ContactSerializer
 from django.utils import timezone
 
 @api_view(['GET'])
-@ensure_csrf_cookie
 def list_contacts(request):
     if request.method == 'GET':
         SESSION_TOKEN = request.headers.get("Session-Token")
@@ -44,7 +43,7 @@ def list_contacts(request):
             return Response({"error": "User associated with this session does not exist."}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['POST'])
-@requires_csrf_token
+@csrf_exempt
 def create_contact(request):
     if request.method == 'POST':
         SESSION_TOKEN = request.headers.get("Session-Token")
@@ -76,7 +75,7 @@ def create_contact(request):
             return Response({"error": "User associated with this session does not exist."}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['PUT'])
-@requires_csrf_token
+@csrf_exempt
 def edit_contact(request):
     if request.method == 'PUT':
         SESSION_TOKEN = request.headers.get("Session-Token")
@@ -114,7 +113,7 @@ def edit_contact(request):
             return Response({"error": "User associated with this session does not exist."}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['DELETE'])
-@requires_csrf_token
+@csrf_exempt
 def delete_contact(request):
     if request.method == 'DELETE':
         contacts = request.data.get("element_ids")

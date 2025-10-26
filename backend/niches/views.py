@@ -12,7 +12,6 @@ from user_sessions.utils import verify_session, get_user_from_session
 # Create your views here.
 @api_view(['GET'])
 @csrf_exempt
-@ensure_csrf_cookie
 def list_niches(request):
     if request.method == 'GET':
 
@@ -42,7 +41,7 @@ def list_niches(request):
     return Response({'error': 'Invalid request method'}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
-@requires_csrf_token
+@csrf_exempt
 def create_niche(request):
     if request.method == 'POST':
 
@@ -74,7 +73,7 @@ def create_niche(request):
     return Response({'error': 'Invalid request method'}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PUT'])
-@requires_csrf_token
+@csrf_exempt
 def edit_niche(request):
     if request.method == 'PUT':
 
@@ -112,7 +111,7 @@ def edit_niche(request):
     return Response({'error': 'Invalid request method'}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
-@requires_csrf_token
+@csrf_exempt
 def delete_niche(request):
     if request.method == 'DELETE':
         authorization_header = request.headers.get('Authorization')

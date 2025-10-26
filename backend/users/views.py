@@ -13,6 +13,7 @@ from user_sessions.utils import verify_session, get_user_from_session
 
 # Create your views here.
 @api_view(['POST'])
+@csrf_exempt
 def login_view(request):
     username = request.data.get("username")
     password = request.data.get("password")
@@ -42,6 +43,7 @@ def login_view(request):
         return Response({"error": "Invalid username or password."}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['DELETE'])
+@csrf_exempt
 def logout_view(request):
     authorization_header = request.headers.get("Authorization", "")
     if authorization_header.startswith("Session "):
@@ -55,7 +57,7 @@ def logout_view(request):
     return Response({"error": "Authorization header missing."}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['POST'])
-@requires_csrf_token
+@csrf_exempt
 def create_user(request):
     if request.method == 'POST':
         authorization_header = request.headers.get('Authorization')
@@ -84,7 +86,6 @@ def create_user(request):
         return Response(new_user.errors, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['GET'])
-@ensure_csrf_cookie
 def list_users(request):
     if request.method == 'GET':
         authorization_header = request.headers.get('Authorization')
@@ -108,7 +109,7 @@ def list_users(request):
         return Response(serialized.data, status=status.HTTP_200_OK)
     
 @api_view(['DELETE'])
-@requires_csrf_token
+@csrf_exempt
 def delete_user(request):
     if request.method == 'DELETE':
         authorization_header = request.headers.get('Authorization')
@@ -141,7 +142,7 @@ def delete_user(request):
             return Response({"error":"User not found."}, status=status.HTTP_404_NOT_FOUND)
         
 @api_view(['PUT'])
-@requires_csrf_token
+@csrf_exempt
 def edit_user(request):
     if request.method == 'PUT':
         authorization_header = request.headers.get('Authorization')
@@ -179,10 +180,8 @@ def edit_user(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
-@ensure_csrf_cookie
 def get_csrf_token(request):
     """
-    Get CSRF token for authenticated requests
+    CSRF token endpoint (disabled - returns empty token since CSRF is disabled)
     """
-    csrf_token = get_token(request)
-    return Response({"csrf_token": csrf_token}, status=status.HTTP_200_OK)
+    return Response({"csrf_token": ""}, status=status.HTTP_200_OK)

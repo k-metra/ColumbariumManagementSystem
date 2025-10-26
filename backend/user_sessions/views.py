@@ -2,12 +2,14 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import Session
 from django.utils import timezone
 
 # Create your views here.
 @api_view(['GET', 'POST'])
+@csrf_exempt
 def verify_token(request):
     token = request.headers.get('Session-Token')
     if not token:

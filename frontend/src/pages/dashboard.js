@@ -18,22 +18,6 @@ import { fieldsByTab } from "../config/dashboard/fieldsByTab";
 
 import Tab from '../components/dashboard/tab';
 
-async function getCsrf() {
-    const response = await fetch('http://72.61.149.6/api/users/csrf-token/', {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Session ${sessionStorage.getItem('token')}`
-        },
-        credentials: 'include',
-    });
-    if (!response.ok) {
-        throw new Error("Failed to fetch CSRF token");
-    }
-    const data = await response.json();
-    return data.csrf_token;
-}
-
 export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const { username, setUsername } = useAuth();
@@ -70,7 +54,7 @@ export default function DashboardPage() {
         setElements([]);
         console.log(endpoint, " fetching items.");
         try {
-            await fetch (`http://72.61.149.6/api/${endpoint.toLowerCase()}/list-all/`, {
+            await fetch (`https://mcj-parish.hopto.org/api/${endpoint.toLowerCase()}/list-all/`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -78,8 +62,15 @@ export default function DashboardPage() {
                     'Authorization': `Session ${sessionStorage.getItem('token')}`
                 },
                 credentials: 'include',
-            }).then(response => {
+            }).then(async response => {
                 if (!response.ok) {
+                    console.error(`Failed to fetch ${endpoint} items - Status:`, response.status, response.statusText);
+                    try {
+                        const errorData = await response.json();
+                        console.error(`Error response body:`, errorData);
+                    } catch (e) {
+                        console.error('Could not parse error response as JSON');
+                    }
                     throw new Error("Failed to fetch items");
                 } else {
                     return response.json();
@@ -157,17 +148,26 @@ export default function DashboardPage() {
 
         if (confirmation) {
             try {
-                await fetch(`http://72.61.149.6/api/${endpoint}/delete/`, {
+                const response = await fetch(`https://mcj-parish.hopto.org/api/${endpoint}/delete/`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
                         'Session-Token': sessionStorage.getItem('token'),
                         'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                        'X-CSRFToken': getCsrf(),
                     },
                     body: JSON.stringify({ element_ids: selectedElements }),
                     credentials: 'include',
-                })
+                });
+
+                if (!response.ok) {
+                    console.error(`Failed to delete ${endpoint} items - Status:`, response.status, response.statusText);
+                    try {
+                        const errorData = await response.json();
+                        console.error(`Delete error response:`, errorData);
+                    } catch (e) {
+                        console.error('Could not parse delete error response as JSON');
+                    }
+                }
             } catch (Exception) {
                 console.log("Error deleting items: ", Exception);
             } finally {
@@ -189,7 +189,6 @@ export default function DashboardPage() {
             let headers = {
                 'Session-Token': sessionStorage.getItem('token'),
                 'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                'X-CSRFToken': getCsrf(),
             };
             
             let body;
@@ -214,7 +213,7 @@ export default function DashboardPage() {
 
             console.log("Edit data type:", data instanceof FormData ? 'FormData' : 'JSON');
 
-            const response = await fetch(`http://72.61.149.6/api/${endpoint}/edit/?${endpoint.slice(0, -1)}_id=${elementToEdit.id}`, {
+            const response = await fetch(`https://mcj-parish.hopto.org/api/${endpoint}/edit/?${endpoint.slice(0, -1)}_id=${elementToEdit.id}`, {
                 method: 'PUT',
                 headers,
                 body,
@@ -232,6 +231,13 @@ export default function DashboardPage() {
                         : element
                 ));
             } else {
+                console.error(`Failed to edit ${endpoint} item - Status:`, response.status, response.statusText);
+                try {
+                    const errorData = await response.json();
+                    console.error(`Edit error response:`, errorData);
+                } catch (e) {
+                    console.error('Could not parse edit error response as JSON');
+                }
                 console.log("Failed to edit item");
                 // On failure, still refetch to ensure data consistency
                 await fetchItems(selectedTab);
@@ -258,7 +264,6 @@ export default function DashboardPage() {
             let headers = {
                 'Session-Token': sessionStorage.getItem('token'),
                 'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                'X-CSRFToken': getCsrf(),
             };
             
             let body;
@@ -284,13 +289,20 @@ export default function DashboardPage() {
 
             console.log('Creating', endpoint, 'data type:', data instanceof FormData ? 'FormData' : 'JSON');
 
-            await fetch("http://72.61.149.6/api/" + endpoint + "/create-new/", {
+            await fetch("https://mcj-parish.hopto.org/api/" + endpoint + "/create-new/", {
                 method: 'POST',
                 headers,
                 body,
                 credentials: 'include',
-            }).then(response => {
+            }).then(async response => {
                 if (!response.ok) {
+                    console.error(`Failed to create ${endpoint} item - Status:`, response.status, response.statusText);
+                    try {
+                        const errorData = await response.json();
+                        console.error(`Create error response:`, errorData);
+                    } catch (e) {
+                        console.error('Could not parse create error response as JSON');
+                    }
                     throw new Error("Failed to create item");
                 }
 
@@ -357,7 +369,7 @@ export default function DashboardPage() {
     // fetch customer names to use as options for Payments.payer select
     const fetchCustomerOptions = async () => {
         try {
-            const res = await fetch('http://72.61.149.6/api/customers/list-all/', {
+            const res = await fetch('https://mcj-parish.hopto.org/api/customers/list-all/', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -366,7 +378,16 @@ export default function DashboardPage() {
                 },
                 credentials: 'include',
             });
-            if (!res.ok) throw new Error('Failed to fetch customers');
+            if (!res.ok) {
+                console.error(`Failed to fetch customers - Status:`, res.status, res.statusText);
+                try {
+                    const errorData = await res.json();
+                    console.error(`Customer fetch error response:`, errorData);
+                } catch (e) {
+                    console.error('Could not parse customer fetch error response as JSON');
+                }
+                throw new Error('Failed to fetch customers');
+            }
             const data = await res.json();
 
             // normalize keys (reuse normalizeKey logic)
@@ -386,7 +407,7 @@ export default function DashboardPage() {
             }
 
             const normalized = Array.isArray(data) ? data.map(normalizeObject) : [];
-                    const opts = normalized.map(c => ({ value: c.name, label: c.name || c.fullName || (`#${String(c.id).padStart(3, '0')}`) }));
+            const opts = normalized.map(c => ({ value: c.name, label: c.name || c.fullName || (`#${String(c.id).padStart(3, '0')}`) }));
             setCustomerOptions(opts);
         } catch (err) {
             console.error('Error fetching customer options', err);
@@ -396,7 +417,7 @@ export default function DashboardPage() {
 
     const fetchNicheOptions = async () => {
         try {
-            const res = await fetch('http://72.61.149.6/api/niches/list-all/', {
+            const res = await fetch('https://mcj-parish.hopto.org/api/niches/list-all/', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -405,7 +426,16 @@ export default function DashboardPage() {
                 },
                 credentials: 'include',
             });
-            if (!res.ok) throw new Error('Failed to fetch niches');
+            if (!res.ok) {
+                console.error(`Failed to fetch niches - Status:`, res.status, res.statusText);
+                try {
+                    const errorData = await res.json();
+                    console.error(`Niche fetch error response:`, errorData);
+                } catch (e) {
+                    console.error('Could not parse niche fetch error response as JSON');
+                }
+                throw new Error('Failed to fetch niches');
+            }
             const data = await res.json();
 
             const available = data.filter(n => n.status === 'Available' || n.status === 'Occupied');

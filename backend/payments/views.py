@@ -12,7 +12,6 @@ from user_sessions.utils import verify_session, get_user_from_session
 
 # Create your views here.
 @api_view(['GET'])
-@ensure_csrf_cookie
 def list_payments(request):
     if request.method == 'GET':
         SESSION_TOKEN = request.headers.get("Session-Token")
@@ -44,7 +43,7 @@ def list_payments(request):
             return Response({"error": "User associated with this session does not exist."}, status=status.HTTP_401_UNAUTHORIZED)
         
 @api_view(['POST'])
-@requires_csrf_token
+@csrf_exempt
 def create_payment(request):
     if request.method == 'POST':
         SESSION_TOKEN = request.headers.get("Session-Token")
@@ -79,6 +78,7 @@ def create_payment(request):
             return Response({"error": "User associated with this session does not exist."}, status=status.HTTP_401_UNAUTHORIZED)
         
 @api_view(['DELETE'])
+@csrf_exempt
 def delete_payment(request):
     if request.method == 'DELETE':
         payments = request.data.get("element_ids")
@@ -116,7 +116,7 @@ def delete_payment(request):
             return Response({"error": "User associated with this session does not exist."}, status=status.HTTP_401_UNAUTHORIZED)
         
 @api_view(['PUT'])
-@requires_csrf_token
+@csrf_exempt
 def edit_payment(request):
     if request.method == 'PUT':
         SESSION_TOKEN = request.headers.get("Session-Token")
@@ -187,7 +187,7 @@ def get_payment_details(request, payment_id):
 
 
 @api_view(['POST'])
-@requires_csrf_token
+@csrf_exempt
 def add_payment_detail(request, payment_id):
     """Add a new payment detail to an existing payment"""
     authorization_header = request.headers.get("Authorization")
@@ -246,7 +246,7 @@ def add_payment_detail(request, payment_id):
 
 
 @api_view(['PUT'])
-@requires_csrf_token
+@csrf_exempt
 def edit_payment_detail(request, detail_id):
     """Edit a specific payment detail"""
     authorization_header = request.headers.get("Authorization")
@@ -285,6 +285,7 @@ def edit_payment_detail(request, detail_id):
 
 
 @api_view(['DELETE'])
+@csrf_exempt
 def delete_payment_detail(request, detail_id):
     """Delete a specific payment detail"""
     authorization_header = request.headers.get("Authorization")

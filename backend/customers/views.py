@@ -10,7 +10,6 @@ from user_sessions.utils import verify_session, get_user_from_session
 
 # Create your views here.
 @api_view(['GET'])
-@ensure_csrf_cookie
 def customer_list(request):
     authorization_header = request.headers.get("Authorization")
 
@@ -55,11 +54,16 @@ def customer_list_names(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
-@requires_csrf_token
+@csrf_exempt
 def create_customer(request):
+    print(f"DEBUG: create_customer called with method: {request.method}")
+    print(f"DEBUG: Headers: {dict(request.headers)}")
+    print(f"DEBUG: Data: {request.data}")
+    
     authorization_header = request.headers.get("Authorization")
 
     if not authorization_header:
+        print("DEBUG: No authorization header")
         return Response({"error":"Authorization header is missing."}, status=status.HTTP_401_UNAUTHORIZED)
     
     is_session_valid = verify_session(authorization_header)
@@ -81,6 +85,7 @@ def create_customer(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PUT'])
+@csrf_exempt
 def update_customer(request):
     authorization_header = request.headers.get("Authorization")
     if not authorization_header:
@@ -116,6 +121,7 @@ def update_customer(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
+@csrf_exempt
 def delete_customers(request):
     authorization_header = request.headers.get("Authorization")
 

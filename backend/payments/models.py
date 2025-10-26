@@ -43,16 +43,22 @@ class Payment(models.Model):
         return self.months_paid > 0
     
     def save(self, *args, **kwargs):
-        # Update status based on payment amounts
-        amount_paid = self.amount_paid
-        remaining = self.amount_due - amount_paid
-        
-        if remaining <= Decimal('0'):
-            self.status = "Completed"
-        elif amount_paid > Decimal('0'):
-            self.status = "Pending"
+        # Only update status if this is not a new instance (has a primary key)
+        if self.pk is not None:
+            # Update status based on payment amounts
+            amount_paid = self.amount_paid
+            remaining = self.amount_due - amount_paid
+            
+            if remaining <= Decimal('0'):
+                self.status = "Completed"
+            elif amount_paid > Decimal('0'):
+                self.status = "Pending"
+            else:
+                self.status = "Inactive"
         else:
-            self.status = "Inactive"
+            # For new instances, set default status
+            if not self.status:
+                self.status = "Inactive"
 
         super().save(*args, **kwargs)
 
