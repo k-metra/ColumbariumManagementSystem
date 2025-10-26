@@ -2,6 +2,8 @@
 .DS_Store
 Thumbs.db
 
+*.zip
+
 # Node / frontend
 frontend/node_modules/
 /.pnp
