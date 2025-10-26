@@ -645,8 +645,7 @@ export default function DashboardPage() {
                                         { label: "", key: "_select" },
                                         { label: "Contact ID", key: "id", type: 'number' },
                                         { label: "Family Name", key: "familyName", type: 'text' },
-                                        { label: "Deceased's Name", key: "deceasedName", type: 'text' },
-                                        { label: "Deceased Date", key: "deceasedDate", type: 'date' },
+                                        { label: "Customer's Name", key: "deceasedName", type: 'text' },
                                         { label: "Address", key: "address", type: 'text' },
                                         { label: "Contact Number", key: "contactNumber", type: 'text' }
                                     ],
@@ -660,7 +659,6 @@ export default function DashboardPage() {
                                             <td className="p-2">#{(row.id ?? '').toString().padStart(3, "0")}</td>
                                             <td className="p-2">{row.familyName ?? ''}</td>
                                             <td className="p-2">{row.deceasedName ?? ''}</td>
-                                            <td className="p-2">{row.deceasedDate ? new Intl.DateTimeFormat('en-US').format(new Date(row.deceasedDate)) : ''}</td>
                                             <td className="p-2">{row.address ?? ''}</td>
                                             <td className="p-2">{row.contactNumber ?? ''}</td>
                                             <td className="p-2"><StatusTag status={row.status ?? ''} />
