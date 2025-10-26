@@ -17,8 +17,7 @@ export const fieldsByTab = {
         ],
         Contacts: [
             { name: 'familyName', label: "Family Name", type: 'text' },
-            { name: 'deceasedName', label: "Deceased's Name", type: 'text' },
-            { name: 'deceasedDate', label: "Deceased Date", type: 'date' },
+            { name: 'deceasedName', label: "Customer's Name", type: 'text' },
             { name: 'address', label: "Address", type: 'textarea' },
             { name: 'contactNumber', label: 'Contact Number', type: 'text' },
         ],
