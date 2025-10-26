@@ -31,7 +31,7 @@ export default function PaymentDetailModal({ paymentId, onClose, onPaymentAdded 
     const fetchPaymentDetails = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:8000/api/payments/${paymentId}/details/`, {
+            const response = await fetch(`http://72.61.149.6/api/payments/${paymentId}/details/`, {
                 method: 'GET',
                 headers: {
                     'Session-Token': sessionStorage.getItem('token'),
@@ -66,7 +66,7 @@ export default function PaymentDetailModal({ paymentId, onClose, onPaymentAdded 
         }
 
         try {
-            const response = await fetch(`http://localhost:8000/api/payments/${paymentId}/add-payment/`, {
+            const response = await fetch(`http://72.61.149.6/api/payments/${paymentId}/add-payment/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -130,7 +130,7 @@ export default function PaymentDetailModal({ paymentId, onClose, onPaymentAdded 
         }
 
         try {
-            const response = await fetch(`http://localhost:8000/api/payments/detail/${editingPayment.id}/edit/`, {
+            const response = await fetch(`http://72.61.149.6/api/payments/detail/${editingPayment.id}/edit/`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -172,7 +172,7 @@ export default function PaymentDetailModal({ paymentId, onClose, onPaymentAdded 
         if (!confirmation) return;
 
         try {
-            const response = await fetch(`http://localhost:8000/api/payments/detail/${detailId}/delete/`, {
+            const response = await fetch(`http://72.61.149.6/api/payments/detail/${detailId}/delete/`, {
                 method: 'DELETE',
                 headers: {
                     'Session-Token': sessionStorage.getItem('token'),

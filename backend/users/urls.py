@@ -9,4 +9,5 @@ urlpatterns = [
     path('list-all/', list_users, name='list_users'),
     path('edit/', edit_user, name='edit_user'),
     path('delete/', delete_user, name='delete_user'),
+    path('csrf-token/', get_csrf_token, name='get_csrf_token'),
 ]

@@ -43,7 +43,7 @@ export default function CustomerModal({ info, onClose }) {
         // If it's already a full URL, return as is
         if (relativePath.startsWith('http')) return relativePath;
         // Otherwise, construct full URL with backend server
-        return `http://localhost:8000${relativePath}`;
+        return `http://72.61.149.6${relativePath}`;
     };
 
     const memorandumPath = info.memorandumOfAgreement || info.memorandum_of_agreement;

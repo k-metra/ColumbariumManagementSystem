@@ -15,7 +15,7 @@ export default function Analytics() {
         console.log('Fetching analytics data...');
         
         try {
-            const response = await fetch('http://localhost:8000/api/analytics/data/', {
+            const response = await fetch('http://72.61.149.6/api/analytics/data/', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

@@ -18,14 +18,20 @@ import { fieldsByTab } from "../config/dashboard/fieldsByTab";
 
 import Tab from '../components/dashboard/tab';
 
-function getCsrf() {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.startsWith('csrftoken=')) {
-            return cookie.substring('csrftoken='.length, cookie.length);
-        }
+async function getCsrf() {
+    const response = await fetch('http://72.61.149.6/api/users/csrf-token/', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Session ${sessionStorage.getItem('token')}`
+        },
+        credentials: 'include',
+    });
+    if (!response.ok) {
+        throw new Error("Failed to fetch CSRF token");
     }
+    const data = await response.json();
+    return data.csrf_token;
 }
 
 export default function DashboardPage() {
@@ -64,7 +70,7 @@ export default function DashboardPage() {
         setElements([]);
         console.log(endpoint, " fetching items.");
         try {
-            await fetch (`http://localhost:8000/api/${endpoint.toLowerCase()}/list-all/`, {
+            await fetch (`http://72.61.149.6/api/${endpoint.toLowerCase()}/list-all/`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -151,7 +157,7 @@ export default function DashboardPage() {
 
         if (confirmation) {
             try {
-                await fetch(`http://localhost:8000/api/${endpoint}/delete/`, {
+                await fetch(`http://72.61.149.6/api/${endpoint}/delete/`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -208,7 +214,7 @@ export default function DashboardPage() {
 
             console.log("Edit data type:", data instanceof FormData ? 'FormData' : 'JSON');
 
-            const response = await fetch(`http://localhost:8000/api/${endpoint}/edit/?${endpoint.slice(0, -1)}_id=${elementToEdit.id}`, {
+            const response = await fetch(`http://72.61.149.6/api/${endpoint}/edit/?${endpoint.slice(0, -1)}_id=${elementToEdit.id}`, {
                 method: 'PUT',
                 headers,
                 body,
@@ -278,7 +284,7 @@ export default function DashboardPage() {
 
             console.log('Creating', endpoint, 'data type:', data instanceof FormData ? 'FormData' : 'JSON');
 
-            await fetch("http://localhost:8000/api/" + endpoint + "/create-new/", {
+            await fetch("http://72.61.149.6/api/" + endpoint + "/create-new/", {
                 method: 'POST',
                 headers,
                 body,
@@ -351,7 +357,7 @@ export default function DashboardPage() {
     // fetch customer names to use as options for Payments.payer select
     const fetchCustomerOptions = async () => {
         try {
-            const res = await fetch('http://localhost:8000/api/customers/list-all/', {
+            const res = await fetch('http://72.61.149.6/api/customers/list-all/', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -390,7 +396,7 @@ export default function DashboardPage() {
 
     const fetchNicheOptions = async () => {
         try {
-            const res = await fetch('http://localhost:8000/api/niches/list-all/', {
+            const res = await fetch('http://72.61.149.6/api/niches/list-all/', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

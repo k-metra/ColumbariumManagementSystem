@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from users.models import User
 from user_sessions.models import Session
 from django.views.decorators.csrf import csrf_exempt, requires_csrf_token, ensure_csrf_cookie
+from django.middleware.csrf import get_token
 
 from .serializers import UserSerializer, UserCreateSerializer
 
@@ -176,3 +177,12 @@ def edit_user(request):
         
         print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@ensure_csrf_cookie
+def get_csrf_token(request):
+    """
+    Get CSRF token for authenticated requests
+    """
+    csrf_token = get_token(request)
+    return Response({"csrf_token": csrf_token}, status=status.HTTP_200_OK)
