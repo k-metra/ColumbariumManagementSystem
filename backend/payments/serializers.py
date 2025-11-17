@@ -1,5 +1,6 @@
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 from .models import Payment, PaymentDetail
+from customers.models import Customer
 
 # Serializer for Payment model
 class PaymentSerializer(ModelSerializer):
@@ -13,7 +14,8 @@ class PaymentSerializer(ModelSerializer):
         fields = ['id', 'payer', 'amount_due', 'maintenance_fee', 'status', 
                  'amount_paid', 'remaining_balance', 'last_payment_date', 'months_paid']
         read_only_fields = ['status', 'amount_paid', 'remaining_balance', 'last_payment_date', 'months_paid']
-    
+
+   
     def get_amount_paid(self, obj):
         return float(obj.amount_paid)
     

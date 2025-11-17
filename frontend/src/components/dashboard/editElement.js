@@ -51,7 +51,12 @@ export default function EditElement({ tab, elementData, fields, onEdit }) {
                         />
                         {elementData[f.name] && (
                             <div className="text-sm text-gray-600">
-                                Current: <a href={elementData[f.name]} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">View current file</a>
+                                Current: <a href={`http://localhost:8000/media/${elementData[f.name]}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                                    View current file
+                                </a>
+                                <div className="text-xs text-gray-500 mt-1">
+                                    Leave empty to keep current file, or select a new file to replace it.
+                                </div>
                             </div>
                         )}
                     </div>
@@ -70,20 +75,45 @@ export default function EditElement({ tab, elementData, fields, onEdit }) {
                 <form onSubmit={(e) => { 
                     e.preventDefault(); 
                     
-                    // Check if we have any file fields
-                    const hasFiles = Object.values(formData).some(value => value instanceof File);
+                    // Check if we have any new file uploads
+                    const hasNewFiles = Object.values(formData).some(value => value instanceof File);
                     
-                    if (hasFiles) {
+                    if (hasNewFiles) {
                         // Create FormData for file uploads
                         const form = new FormData();
                         Object.keys(formData).forEach(key => {
-                            if (formData[key] !== null && formData[key] !== undefined && formData[key] !== '') {
-                                form.append(key, formData[key]);
+                            const value = formData[key];
+                            const field = fields.find(f => f.name === key);
+                            
+                            if (value !== null && value !== undefined) {
+                                if (value instanceof File) {
+                                    // New file upload
+                                    form.append(key, value);
+                                } else if (field?.type === 'file' && typeof value === 'string' && value.trim() !== '') {
+                                    // Existing file - don't include in FormData to keep existing file
+                                    // The backend will keep the existing file if no new file is provided
+                                } else if (field?.type !== 'file' && value !== '') {
+                                    // Regular form field with non-empty value
+                                    form.append(key, value);
+                                } else if (field?.type !== 'file') {
+                                    // Regular form field (including empty values for non-file fields)
+                                    form.append(key, value);
+                                }
                             }
                         });
+                        console.log('Submitting FormData for edit with new files');
                         onEdit(form);
                     } else {
-                        onEdit(formData);
+                        // No new files, send as JSON but exclude file fields with string values (existing files)
+                        const jsonData = { ...formData };
+                        fields.forEach(field => {
+                            if (field.type === 'file' && typeof jsonData[field.name] === 'string') {
+                                // Remove existing file path from JSON data to preserve existing file
+                                delete jsonData[field.name];
+                            }
+                        });
+                        console.log('Submitting JSON data for edit without file changes');
+                        onEdit(jsonData);
                     }
                 }} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-2">

@@ -6,6 +6,7 @@ from users.models import User
 from user_sessions.models import Session
 from django.views.decorators.csrf import csrf_exempt, requires_csrf_token, ensure_csrf_cookie
 from django.middleware.csrf import get_token
+from django.contrib.auth.hashers import check_password, make_password, identify_hasher
 
 from .serializers import UserSerializer, UserCreateSerializer
 
@@ -23,17 +24,22 @@ def login_view(request):
     
     try:
         user = User.objects.get(username=username)
-
-        if user.password != password:
-            return Response({"error": "Invalid username or password."}, status=status.HTTP_401_UNAUTHORIZED)
         
-        user_session = Session.objects.filter(user=user).first()
-
-        if user_session:
+        try:
+            identify_hasher(user.password)
+            if not check_password(password, user.password):
+                return Response({"error": "Invalid username or password."}, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception:
+            if user.password != password:
+                return Response({"error":"Invalid username or password."}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            user_session = Session.objects.get(user=user)
             user_session.delete()
             print("Deleted session. Making new one...")
-            user_session = Session.create_session(user)
-        else: user_session = Session.create_session(user)
+        except Session.DoesNotExist:
+            print("Session didn't exist for the user.")
+
+        user_session = Session.create_session(user)
 
         user_session.save()
         serialized = UserSerializer(user, many=False)
@@ -51,8 +57,10 @@ def logout_view(request):
         try:
             session = Session.objects.get(session_token=token)
             session.delete()
+            print("Deleting session on logout.")
             return Response({"message": "Logout successful."}, status=status.HTTP_200_OK)
         except Session.DoesNotExist:
+            print("Session could not be found when logging out.")
             return Response({"error": "Invalid session."}, status=status.HTTP_401_UNAUTHORIZED)
     return Response({"error": "Authorization header missing."}, status=status.HTTP_401_UNAUTHORIZED)
 

@@ -21,7 +21,7 @@ export default function LoginForm() {
     async function onSubmit(e) {
         e.preventDefault();
 
-        await fetch('https://mcj-parish.hopto.org/api/users/login-api/', {
+        await fetch('http://localhost:8000/api/users/login-api/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

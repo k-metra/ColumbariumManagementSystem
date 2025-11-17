@@ -3,7 +3,7 @@ import Icon from '../icon';
 export default function AccountModal({ username, role, isOpen }) {
     const handleLogout = async () => {
 
-        await fetch('https://mcj-parish.hopto.org/api/logout-api/', {
+        await fetch('http://localhost:8000/api/logout-api/', {
             method: 'DELETE',
             credentials: 'include',
             headers: {

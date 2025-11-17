@@ -116,10 +116,10 @@ def delete_occupant(request):
         try:
             user_session = Session.objects.get(session_token=SESSION_TOKEN)
 
-            session_expiry = user_session.expiry
+       #     session_expiry = user_session.expiry
 
-            if timezone.now() > session_expiry:
-                return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+      #      if timezone.now() > session_expiry:
+     #           return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
             
             # If session is valid, check user for permissions
             user = user_session.user

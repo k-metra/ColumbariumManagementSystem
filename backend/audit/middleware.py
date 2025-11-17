@@ -67,8 +67,8 @@ class AuditMiddleware(MiddlewareMixin):
 
         print("User: ", user)
 
-        if path.startswith('/api/') and method in ['POST', 'PUT', 'DELETE']:
-            if path == '/api/users/login-api/' or path== "/api/users/logout-api/": return response
+        if path.startswith('/api/') and method in ['POST', 'PUT', 'DELETE'] and path != '/api/login-api/' and path != '/api/logout-api/':
+            if path == '/api/users/login-api/' or path == "/api/users/logout-api/": return response
 
             # Extract app/action from path
             parts = path.strip('/').split('/')

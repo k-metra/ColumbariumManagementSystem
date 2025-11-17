@@ -15,7 +15,7 @@ export default function Analytics() {
         console.log('Fetching analytics data...');
         
         try {
-            const response = await fetch('https://mcj-parish.hopto.org/api/analytics/data/', {
+            const response = await fetch('http://localhost:8000/api/analytics/data/', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -80,71 +80,31 @@ export default function Analytics() {
 
             {analyticsData ? (
                 <>
-                    {/* Top Row - Earnings KPIs */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <KPICard
-                            title="Total Earnings"
-                            value={analyticsData.total_earnings || 0}
-                            icon="fa-solid fa-peso-sign"
-                            color="green"
-                            prefix="₱"
-                        />
-                        <KPICard
-                            title="Monthly Earnings"
-                            value={analyticsData.monthly_earnings || 0}
-                            icon="fa-solid fa-calendar-month"
-                            color="blue"
-                            prefix="₱"
-                        />
-                    </div>
-
-                    {/* Second Row - Occupancy Chart and Stats */}
+                    {/* Main Content - Holder Statistics */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2">
-                            <OccupancyChart data={analyticsData.occupancy || {occupied: 0, full: 0, available: 0, total: 0, occupancy_rate: 0}} />
+                            <OccupancyChart data={analyticsData.holder_status || {with_deceased: 0, without_deceased: 0, total: 0, deceased_rate: 0}} />
                         </div>
                         <div className="space-y-4">
                             <KPICard
-                                title="Total Niches"
-                                value={analyticsData.kpi?.total_niches || 0}
-                                icon="fa-solid fa-square-person-confined"
+                                title="Total Holders"
+                                value={analyticsData.kpi?.total_customers || 0}
+                                icon="fa-solid fa-users"
+                                color="blue"
+                            />
+                            <KPICard
+                                title="Occupied Niches"
+                                value={analyticsData.kpi?.occupied_niches || 0}
+                                icon="fa-solid fa-building"
                                 color="purple"
                             />
                             <KPICard
-                                title="Total Customers"
-                                value={analyticsData.kpi?.total_customers || 0}
-                                icon="fa-solid fa-users"
-                                color="orange"
-                            />
-                            <KPICard
-                                title="Total Occupants"
-                                value={analyticsData.kpi?.total_occupants || 0}
-                                icon="fa-solid fa-person"
-                                color="blue"
+                                title="Total Deceased"
+                                value={analyticsData.kpi?.total_deceased || 0}
+                                icon="fa-solid fa-heart"
+                                color="red"
                             />
                         </div>
-                    </div>
-
-                    {/* Third Row - Niche Status Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <KPICard
-                            title="Occupied Niches"
-                            value={analyticsData.kpi?.occupied_niches || 0}
-                            icon="fa-solid fa-user-check"
-                            color="orange"
-                        />
-                        <KPICard
-                            title="Full Niches"
-                            value={analyticsData.kpi?.full_niches || 0}
-                            icon="fa-solid fa-users"
-                            color="red"
-                        />
-                        <KPICard
-                            title="Available Niches"
-                            value={analyticsData.kpi?.available_niches || 0}
-                            icon="fa-solid fa-circle"
-                            color="green"
-                        />
                     </div>
                 </>
             ) : (

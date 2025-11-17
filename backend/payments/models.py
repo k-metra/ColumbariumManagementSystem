@@ -43,12 +43,12 @@ class Payment(models.Model):
         return self.months_paid > 0
     
     def save(self, *args, **kwargs):
-        # Only update status if this is not a new instance (has a primary key)
+        # Update status based on payment amounts
         if self.pk is not None:
-            # Update status based on payment amounts
+        
             amount_paid = self.amount_paid
             remaining = self.amount_due - amount_paid
-            
+        
             if remaining <= Decimal('0'):
                 self.status = "Completed"
             elif amount_paid > Decimal('0'):
@@ -56,12 +56,11 @@ class Payment(models.Model):
             else:
                 self.status = "Inactive"
         else:
-            # For new instances, set default status
             if not self.status:
                 self.status = "Inactive"
 
         super().save(*args, **kwargs)
-
+  
 
 class PaymentDetail(models.Model):
     """Individual payment transactions"""

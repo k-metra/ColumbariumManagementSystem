@@ -15,10 +15,6 @@ def list_audit_logs(request: Request) -> Response:
     # Your logic to list audit logs
     if request.method == 'GET':
 
-        user = request.user
-        if not user or not user.has_permission("view_audit"):
-            return Response({"error": "You do not have permission to view audit logs."}, status=status.HTTP_403_FORBIDDEN)
-
         logs = AuditLog.objects.all().order_by('-timestamp')
         serializer = AuditLogSerializer(logs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

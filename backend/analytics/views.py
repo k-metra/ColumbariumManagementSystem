@@ -2,15 +2,9 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from django.db.models import Sum, Count
-from django.utils import timezone
-from datetime import datetime, timedelta
-from decimal import Decimal
 
-from niches.models import Niche
-from payments.models import Payment, PaymentDetail
 from customers.models import Customer
-from occupants.models import Occupant
+from niches.models import Niche, Deceased
 from user_sessions.utils import verify_session, get_user_from_session
 
 
@@ -29,57 +23,42 @@ def get_analytics_data(request):
         return Response({"error": "You do not have permission to view this resource."}, status=status.HTTP_403_FORBIDDEN)
     
     try:
-        # 1. Occupancy Rate Data
-        total_niches = Niche.objects.count()
-        occupied_niches = Niche.objects.filter(status='Occupied').count()
-        full_niches = Niche.objects.filter(status='Full').count()
-        available_niches = Niche.objects.filter(status='Available').count()
+        # 1. Holder Status Data (with deceased vs without deceased)
+        total_holders = Customer.objects.count()
         
-        # Total occupied includes both 'Occupied' and 'Full' for rate calculation
-        total_occupied = occupied_niches + full_niches
+        # Count holders with deceased information (check if they have any deceased across all their niches)
+        # Get holders who have at least one deceased record across all their niches
+        holders_with_deceased = Customer.objects.filter(
+            niches__deceased_records__isnull=False
+        ).distinct().count()
         
-        occupancy_data = {
-            'occupied': occupied_niches,
-            'full': full_niches,
-            'available': available_niches,
-            'total': total_niches,
-            'occupancy_rate': round((total_occupied / total_niches * 100), 2) if total_niches > 0 else 0
+        holders_without_deceased = total_holders - holders_with_deceased
+        
+        # Calculate deceased rate
+        deceased_rate = round((holders_with_deceased / total_holders * 100), 2) if total_holders > 0 else 0
+        
+        holder_status_data = {
+            'with_deceased': holders_with_deceased,
+            'without_deceased': holders_without_deceased,
+            'total': total_holders,
+            'deceased_rate': deceased_rate
         }
         
-        # 2. Total Earnings
-        total_earnings = PaymentDetail.objects.aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0.00')
+        # 2. Additional KPI Data
+        # Count occupied niches (those with status 'Occupied' or 'Full')
+        occupied_niches = Niche.objects.filter(status__in=['Occupied', 'Full']).count()
         
-        # 3. Monthly Earnings (current month)
-        now = timezone.now()
-        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        monthly_earnings = PaymentDetail.objects.filter(
-            payment_date__gte=current_month_start
-        ).aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0.00')
+        # Count total deceased records
+        total_deceased = Deceased.objects.count()
         
-        # 4. Customer Count
-        total_customers = Customer.objects.count()
-        
-        # 5. Occupant Count
-        total_occupants = Occupant.objects.count()
-        
-        # Additional KPI data
         kpi_data = {
-            'total_niches': total_niches,
+            'total_customers': total_holders,
             'occupied_niches': occupied_niches,
-            'full_niches': full_niches,
-            'available_niches': available_niches,
-            'total_customers': total_customers,
-            'total_occupants': total_occupants
+            'total_deceased': total_deceased,
         }
         
         return Response({
-            'occupancy': occupancy_data,
-            'total_earnings': float(total_earnings),
-            'monthly_earnings': float(monthly_earnings),
+            'holder_status': holder_status_data,
             'kpi': kpi_data
         }, status=status.HTTP_200_OK)
         

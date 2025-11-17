@@ -52,7 +52,7 @@ function AppContent() {
   const navigate = useNavigate();
   useEffect(() => {
     async function validateToken(token) {
-      await fetch('https://mcj-parish.hopto.org/api/verify-token/', {
+      await fetch('http://localhost:8000/api/verify-token/', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

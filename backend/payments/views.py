@@ -24,8 +24,8 @@ def list_payments(request):
 
             session_expiry = user_session.expiry
 
-            if timezone.now() > session_expiry:
-                return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+#            if timezone.now() > session_expiry:
+#                return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
             
             # If session is valid, check user for permissions
             user = user_session.user
@@ -36,7 +36,7 @@ def list_payments(request):
             
                 return Response(serializer.data, status=status.HTTP_200_OK)
 
-            return Response({"error": "You do not have permission to view these records."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error":"You do not have permission to view these records."}, status=status.HTTP_403_FORBIDDEN)
         except Session.DoesNotExist:
             return Response({"error": "Invalid session token."}, status=status.HTTP_401_UNAUTHORIZED)
         except User.DoesNotExist:
@@ -54,10 +54,10 @@ def create_payment(request):
         try:
             user_session = Session.objects.get(session_token=SESSION_TOKEN)
 
-            session_expiry = user_session.expiry
+#            session_expiry = user_session.expiry
 
-            if timezone.now() > session_expiry:
-                return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+ #           if timezone.now() > session_expiry:
+  #              return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
             
             # If session is valid, check user for permissions
             user = user_session.user
@@ -90,10 +90,10 @@ def delete_payment(request):
         try:
             user_session = Session.objects.get(session_token=SESSION_TOKEN)
 
-            session_expiry = user_session.expiry
+  #          session_expiry = user_session.expiry
 
-            if timezone.now() > session_expiry:
-                return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+#            if timezone.now() > session_expiry:
+ #               return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
             
             # If session is valid, check user for permissions
             user = user_session.user
@@ -136,8 +136,8 @@ def edit_payment(request):
 
             session_expiry = user_session.expiry
 
-            if session_expiry < timezone.now():
-                return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+    #        if session_expiry < timezone.now():
+   #             return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
             
             user = user_session.user
             if user.has_permission("edit_record") and user.has_permission("view_dashboard"):

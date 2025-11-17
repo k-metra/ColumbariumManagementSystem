@@ -22,10 +22,10 @@ def list_contacts(request):
         try:
             user_session = Session.objects.get(session_token=SESSION_TOKEN)
 
-            session_expiry = user_session.expiry
+            #session_expiry = user_session.expiry
 
-            if timezone.now() > session_expiry:
-                return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+            #if timezone.now() > session_expiry:
+                #return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
             
             # If session is valid, check user for permissions
             user = user_session.user
@@ -54,10 +54,10 @@ def create_contact(request):
         try:
             user_session = Session.objects.get(session_token=SESSION_TOKEN)
 
-            session_expiry = user_session.expiry
+  #          session_expiry = user_session.expiry
 
-            if timezone.now() > session_expiry:
-                return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+#            if timezone.now() > session_expiry:
+ #               return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
             
             # If session is valid, check user for permissions
             user = user_session.user
@@ -87,10 +87,10 @@ def edit_contact(request):
         try:
             user_session = Session.objects.get(session_token=SESSION_TOKEN)
 
-            session_expiry = user_session.expiry
+  #          session_expiry = user_session.expiry
 
-            if timezone.now() > session_expiry:
-                return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+ #           if timezone.now() > session_expiry:
+#                return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
             
             # If session is valid, check user for permissions
             user = user_session.user
@@ -103,7 +103,7 @@ def edit_contact(request):
                 serializer = ContactSerializer(contact, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
-                    return Response({"ids": [serializer.data.id]}, status=status.HTTP_200_OK)
+                    return Response({"ids": [serializer.data["id"]]}, status=status.HTTP_200_OK)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
             return Response({"error": "You do not have permission to edit records."}, status=status.HTTP_403_FORBIDDEN)
@@ -125,10 +125,10 @@ def delete_contact(request):
         try:
             user_session = Session.objects.get(session_token=SESSION_TOKEN)
 
-            session_expiry = user_session.expiry
+     #       session_expiry = user_session.expiry
 
-            if timezone.now() > session_expiry:
-                return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
+    #        if timezone.now() > session_expiry:
+   #             return Response({"error": "Session has expired. Please log in again."}, status=status.HTTP_401_UNAUTHORIZED)
             
             # If session is valid, check user for permissions
             user = user_session.user
