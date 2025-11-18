@@ -46,3 +46,20 @@ class Customer(models.Model):
     def has_deceased(self):
         """Check if this holder has any deceased across all their niches"""
         return self.get_total_deceased_count() > 0
+    
+    def has_expiring_niches(self):
+        """Check if this holder has any niches expiring within one year"""
+        for niche in self.niches.all():
+            if niche.is_expiring_soon():
+                return True
+        return False
+    
+    def get_earliest_expiry_days(self):
+        """Get the number of days until the earliest expiring niche"""
+        earliest_days = None
+        for niche in self.niches.all():
+            days = niche.days_until_expiry()
+            if days is not None:
+                if earliest_days is None or days < earliest_days:
+                    earliest_days = days
+        return earliest_days

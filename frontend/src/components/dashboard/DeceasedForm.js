@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function DeceasedForm({ deceased, niche, onSave, onCancel }) {
     const [formData, setFormData] = useState({
@@ -7,11 +7,62 @@ export default function DeceasedForm({ deceased, niche, onSave, onCancel }) {
         date_of_birth: deceased?.date_of_birth || '',
         date_of_death: deceased?.date_of_death || '',
         interment_date: deceased?.interment_date || '',
-        relationship_to_holder: deceased?.relationship_to_holder || ''
+        relationship_to_holder: deceased?.relationship_to_holder || '',
+        slot: deceased?.slot || ''
     });
+    const [availableSlots, setAvailableSlots] = useState([]);
     const [deathCertificate, setDeathCertificate] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    const allSlots = ['Upper Left', 'Upper Right', 'Lower Left', 'Lower Right'];
+
+    useEffect(() => {
+        if (niche?.id) {
+            fetchAvailableSlots();
+        }
+    }, [niche?.id]);
+
+    const fetchAvailableSlots = async () => {
+        try {
+            const response = await fetch(`http://localhost:8000/api/niches/list-holder/?holder_id=${niche.holder}`, {
+                headers: {
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                    'Session-Token': sessionStorage.getItem('token')
+                }
+            });
+            
+            if (response.ok) {
+                const niches = await response.json();
+                const currentNiche = niches.find(n => n.id === niche.id);
+                
+                if (currentNiche) {
+                    // Get occupied slots from deceased records
+                    const occupiedSlots = currentNiche.deceased_records?.map(d => d.slot).filter(Boolean) || [];
+                    
+                    // If editing, exclude current deceased's slot from occupied slots
+                    if (deceased?.slot) {
+                        const currentSlotIndex = occupiedSlots.indexOf(deceased.slot);
+                        if (currentSlotIndex > -1) {
+                            occupiedSlots.splice(currentSlotIndex, 1);
+                        }
+                    }
+                    
+                    // Calculate available slots
+                    const available = allSlots.filter(slot => !occupiedSlots.includes(slot));
+                    setAvailableSlots(available);
+                } else {
+                    setAvailableSlots(allSlots);
+                }
+            } else {
+                console.error('Failed to fetch niche data');
+                setAvailableSlots(allSlots);
+            }
+        } catch (error) {
+            console.error('Error fetching available slots:', error);
+            setAvailableSlots(allSlots);
+        }
+    };
 
     const handleChange = (e) => {
         setFormData({
@@ -166,6 +217,36 @@ export default function DeceasedForm({ deceased, niche, onSave, onCancel }) {
                         <p className="text-sm text-gray-600 mt-1">
                             Date when remains were placed in the niche
                         </p>
+                    </div>
+
+                    <div>
+                        <label htmlFor="slot" className="block text-sm font-medium text-gray-700 mb-1">
+                            Slot Position *
+                        </label>
+                        <select
+                            id="slot"
+                            name="slot"
+                            value={formData.slot}
+                            onChange={handleChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                            <option value="">Select slot position</option>
+                            {deceased?.slot && !availableSlots.includes(deceased.slot) && (
+                                <option value={deceased.slot}>{deceased.slot} (current)</option>
+                            )}
+                            {availableSlots.map(slot => (
+                                <option key={slot} value={slot}>{slot}</option>
+                            ))}
+                        </select>
+                        <p className="text-sm text-gray-600 mt-1">
+                            Position of the urn within this niche
+                        </p>
+                        {availableSlots.length === 0 && !deceased?.slot && (
+                            <p className="text-sm text-red-600 mt-1">
+                                No available slots in this niche
+                            </p>
+                        )}
                     </div>
 
                     <div>

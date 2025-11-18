@@ -1,5 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+from datetime import timedelta
 from customers.models import Customer
 
 def validate_file_type(value):
@@ -36,6 +38,10 @@ class Niche(models.Model):
     ])
     max_deceased = models.PositiveIntegerField(default=4, help_text='Maximum number of deceased allowed in this niche')
     
+    # Contract dates
+    date_of_availment = models.DateTimeField(default=timezone.now, help_text='Date when the niche was availed/purchased')
+    date_of_expiry = models.DateTimeField(blank=True, null=True, help_text='Automatically calculated as 50 years from date of availment')
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -55,6 +61,26 @@ class Niche(models.Model):
     def is_full(self):
         """Check if niche has reached maximum capacity"""
         return self.get_deceased_count() >= self.max_deceased
+    
+    def is_expiring_soon(self):
+        """Check if niche expires within one year"""
+        if not self.date_of_expiry:
+            return False
+        one_year_from_now = timezone.now() + timedelta(days=365)
+        return self.date_of_expiry <= one_year_from_now
+    
+    def days_until_expiry(self):
+        """Get number of days until expiry, returns None if no expiry date"""
+        if not self.date_of_expiry:
+            return None
+        delta = self.date_of_expiry - timezone.now()
+        return max(0, delta.days)  # Return 0 if already expired
+    
+    def calculate_expiry_date(self):
+        """Calculate expiry date as 50 years from availment date"""
+        if self.date_of_availment:
+            return self.date_of_availment + timedelta(days=50*365)  # 50 years
+        return None
     
     def update_status(self):
         """Update status based on deceased count"""
@@ -80,9 +106,25 @@ class Niche(models.Model):
             
             # For new instances, set status to Available since there can't be any deceased yet
             self.status = 'Available'
+            # Always calculate expiry date for new instances
+            self.date_of_expiry = self.calculate_expiry_date()
         else:
             # For existing instances, update status based on current deceased count
             self.update_status()
+            
+            # Check if availment date has changed and recalculate expiry
+            if self.pk:
+                try:
+                    old_instance = Niche.objects.get(pk=self.pk)
+                    if old_instance.date_of_availment != self.date_of_availment:
+                        self.date_of_expiry = self.calculate_expiry_date()
+                except Niche.DoesNotExist:
+                    # If for some reason the old instance doesn't exist, recalculate anyway
+                    self.date_of_expiry = self.calculate_expiry_date()
+            else:
+                # Always recalculate if no expiry date exists
+                if not self.date_of_expiry:
+                    self.date_of_expiry = self.calculate_expiry_date()
         
         super().save(*args, **kwargs)
 
@@ -96,6 +138,14 @@ class Deceased(models.Model):
     date_of_birth = models.DateField(blank=True, null=True)
     date_of_death = models.DateField(blank=True, null=True)
     interment_date = models.DateField(blank=True, null=True, help_text='Date when remains were placed in niche')
+    
+    # Slot position within the niche
+    slot = models.CharField(max_length=20, choices=[
+        ('Upper Left', 'Upper Left'),
+        ('Upper Right', 'Upper Right'),
+        ('Lower Left', 'Lower Left'),
+        ('Lower Right', 'Lower Right'),
+    ], help_text='Slot position within the niche for this urn')
     
     # Relationship to holder
     relationship_to_holder = models.CharField(max_length=50, blank=True, null=True, choices=[
@@ -129,18 +179,31 @@ class Deceased(models.Model):
 
     class Meta:
         ordering = ['interment_date', 'created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['niche', 'slot'], name='unique_niche_slot')
+        ]
         
     def __str__(self):
         return f"{self.name} - {self.niche.location}"
     
     def clean(self):
-        """Validate that niche doesn't exceed maximum capacity"""
+        """Validate that niche doesn't exceed maximum capacity and slot is unique"""
         if self.niche_id:
             # Count existing deceased records for this niche (excluding current record if updating)
             existing_count = Deceased.objects.filter(niche=self.niche).exclude(pk=self.pk).count()
             
             if existing_count >= self.niche.max_deceased:
                 raise ValidationError(f"This niche has reached its maximum capacity of {self.niche.max_deceased} deceased records.")
+            
+            # Check if slot is already occupied in this niche
+            if self.slot:
+                slot_taken = Deceased.objects.filter(
+                    niche=self.niche, 
+                    slot=self.slot
+                ).exclude(pk=self.pk).exists()
+                
+                if slot_taken:
+                    raise ValidationError(f"The {self.slot} slot is already occupied in this niche.")
     
     def save(self, *args, **kwargs):
         # Validate before saving

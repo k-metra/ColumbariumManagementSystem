@@ -4,22 +4,25 @@ import Select from 'react-select';
 export default function NicheForm({ niche, holder, onSave, onCancel }) {
     // Predefined niche locations
     const allLocations = [
-        "Wall 3 – Row 2 – Niche 4 – Upper Left",
-        "Wall 1 – Row 4 – Niche 2 – Lower Right", 
-        "Wall 4 – Row 1 – Niche 5 – Upper Right",
-        "Wall 2 – Row 3 – Niche 1 – Lower Left",
-        "Wall 1 – Row 2 – Niche 3 – Upper Left",
-        "Wall 4 – Row 4 – Niche 4 – Lower Right",
-        "Wall 2 – Row 1 – Niche 5 – Lower Left", 
-        "Wall 3 – Row 3 – Niche 2 – Upper Right",
-        "Wall 4 – Row 2 – Niche 1 – Lower Right",
-        "Wall 1 – Row 3 – Niche 4 – Upper Left"
+        "Wall 3 – Row 2 – Niche 4",
+        "Wall 1 – Row 4 – Niche 2", 
+        "Wall 4 – Row 1 – Niche 5",
+        "Wall 2 – Row 3 – Niche 1",
+        "Wall 1 – Row 2 – Niche 3",
+        "Wall 4 – Row 4 – Niche 4",
+        "Wall 2 – Row 1 – Niche 5", 
+        "Wall 3 – Row 3 – Niche 2",
+        "Wall 4 – Row 2 – Niche 1",
+        "Wall 1 – Row 3 – Niche 4"
     ];
 
     const [formData, setFormData] = useState({
         holder: holder?.id || '',
         location: niche?.location || '',
-        niche_type: niche?.niche_type || 'Granite'
+        niche_type: niche?.niche_type || 'Granite',
+        date_of_availment: niche?.date_of_availment ? 
+            new Date(niche.date_of_availment).toISOString().split('T')[0] : 
+            new Date().toISOString().split('T')[0]
     });
     const [availableLocations, setAvailableLocations] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -210,21 +213,65 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
                         </select>
                     </div>
 
+                    <div>
+                        <label htmlFor="date_of_availment" className="block text-sm font-medium text-gray-700 mb-1">
+                            Date of Availment *
+                        </label>
+                        <input
+                            type="date"
+                            id="date_of_availment"
+                            name="date_of_availment"
+                            value={formData.date_of_availment}
+                            onChange={handleChange}
+                            required
+                            max={new Date().toISOString().split('T')[0]}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <p className="text-sm text-gray-500 mt-1">
+                            Contract start date (expiry calculated as 50 years from this date)
+                        </p>
+                    </div>
+
                     {niche && (
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Status (Auto-calculated)
-                            </label>
-                            <input
-                                type="text"
-                                value={niche?.status || 'Available'}
-                                disabled
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
-                            />
-                            <p className="text-sm text-gray-500 mt-1">
-                                Status is automatically calculated based on occupancy
-                            </p>
-                        </div>
+                        <>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Contract Expiry Date
+                                </label>
+                                <input
+                                    type="text"
+                                    value={niche?.date_of_expiry ? 
+                                        new Date(niche.date_of_expiry).toLocaleDateString() : 
+                                        'Calculating...'}
+                                    disabled
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
+                                />
+                                <p className="text-sm text-gray-500 mt-1">
+                                    {niche?.days_until_expiry !== undefined ? 
+                                        `${niche.days_until_expiry} days remaining` : 
+                                        'Automatically calculated as 50 years from availment date'}
+                                </p>
+                                {niche?.is_expiring_soon && (
+                                    <p className="text-sm text-orange-600 mt-1 font-medium">
+                                        ⚠️ Contract expires within one year!
+                                    </p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Status (Auto-calculated)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={niche?.status || 'Available'}
+                                    disabled
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
+                                />
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Status is automatically calculated based on occupancy
+                                </p>
+                            </div>
+                        </>
                     )}
 
                     <div className="flex justify-end gap-3 mt-6">

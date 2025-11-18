@@ -13,6 +13,8 @@ import AccountModal from "../components/dashboard/accountModal";
 import CustomerModal from "../components/dashboard/customerModal";
 import Analytics from "../components/dashboard/analytics/Analytics";
 import HoldersGrid from "../components/dashboard/holdersGrid";
+import Reports from "../components/dashboard/Reports";
+import Table from "../components/dashboard/table";
 
 import { fieldsByTab } from "../config/dashboard/fieldsByTab";
 
@@ -38,11 +40,16 @@ export default function DashboardPage() {
     const [openAccountModal, setOpenAccountModal] = useState(false);
     const accountModalRef = useRef(null);
     const [filter, setFilter] = useState("");
+    const [searchFilter, setSearchFilter] = useState("holder"); // "holder" or "deceased"
+    const [filteredData, setFilteredData] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
     const [holderInfo, setHolderInfo] = useState({});
+    const [expiredNichesCount, setExpiredNichesCount] = useState(0);
     
     async function fetchItems(endpoint) {
-        // Skip fetching for Analytics tab since it handles its own data
-        if (endpoint === 'Analytics') {
+        // Skip fetching for Analytics and Reports tabs since they handle their own data
+        if (endpoint === 'Analytics' || endpoint === 'Reports') {
             setTableLoading(false);
             return;
         }
@@ -101,6 +108,28 @@ export default function DashboardPage() {
         }
     }
 
+    async function fetchExpiredNichesCount() {
+        try {
+            const response = await fetch(`http://localhost:8000/api/customers/expired-count/`, {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Session-Token': sessionStorage.getItem('token'),
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`
+                },
+                credentials: 'include',
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setExpiredNichesCount(data.count || 0);
+            } else {
+                console.error('Failed to fetch expired count:', response.status, response.statusText);
+            }
+        } catch (error) {
+            console.error("Error fetching expired niches count:", error);
+        }
+    }
+
     // convert camelCase keys used in the UI back to snake_case for the API
     const camelToSnake = (s) => s.replace(/([A-Z])/g, (m) => '_' + m.toLowerCase());
 
@@ -120,6 +149,11 @@ export default function DashboardPage() {
 
     const handleCloseCustomerModal = () => {
         setShowCustomerModal(false);
+    }
+
+    const handleViewHolderDetails = (holder) => {
+        setHolderInfo(holder);
+        setShowCustomerModal(true);
     }
 
     const handleEditClick = () => {
@@ -341,6 +375,7 @@ export default function DashboardPage() {
        }
 
        fetchItems(selectedTab);
+       fetchExpiredNichesCount(); // Fetch expired niches count for notification badge
 
        const loader = setTimeout(() => {
            setLoading(false);
@@ -351,6 +386,69 @@ export default function DashboardPage() {
                 
        }
     }, [username, selectedTab, setUsername])
+
+    // Handle filtering
+    useEffect(() => {
+        const applyFilters = async () => {
+            setCurrentPage(1); // Reset to first page when filtering
+            
+            if (!filter.trim()) {
+                setFilteredData(elements);
+                return;
+            }
+
+            const lowerFilter = filter.toLowerCase();
+
+            if (selectedTab === 'Holders' && searchFilter === 'deceased') {
+                // Search by deceased - make API call to find holders with deceased matching the query
+                try {
+                    const response = await fetch(`http://localhost:8000/api/customers/search-by-deceased/?query=${encodeURIComponent(filter)}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Session-Token': sessionStorage.getItem('token'),
+                            'Authorization': `Session ${sessionStorage.getItem('token')}`
+                        },
+                        credentials: 'include',
+                    });
+
+                    if (response.ok) {
+                        const deceasedSearchResults = await response.json();
+                        setFilteredData(deceasedSearchResults);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Deceased search failed:', error);
+                }
+            }
+
+            // Regular client-side filtering
+            const filtered = elements.filter(el => {
+                if (selectedTab === 'Holders') {
+                    const searchableFields = [
+                        el.name,
+                        el.contactNumber,
+                        el.email,
+                        el.address,
+                        el.id?.toString()
+                    ];
+                    
+                    return searchableFields.some(field => 
+                        field && field.toString().toLowerCase().includes(lowerFilter)
+                    );
+                } else {
+                    // Generic search for other tabs
+                    return Object.values(el).some(value => 
+                        value && value.toString().toLowerCase().includes(lowerFilter)
+                    );
+                }
+            });
+
+            setFilteredData(filtered);
+        };
+
+        applyFilters();
+    }, [elements, filter, searchFilter, selectedTab]);
 
     // for account modal
     useEffect(() => {
@@ -373,6 +471,8 @@ export default function DashboardPage() {
         setSelectedElements([]);
         setSelectedTab(tab);
         setSearchQuery("");
+        setCurrentPage(1); // Reset pagination when switching tabs
+        setFilter(""); // Reset filter when switching tabs
 
         // fetch new items for the selected tab (skip Analytics as it handles its own data)
         console.log("Switching to tab:", tab)
@@ -419,6 +519,15 @@ export default function DashboardPage() {
                         {/* Tabs */}
                         <Tab onClick={() => handleTabSelect("Holders")} icon="fa-solid fa-users">Holders</Tab>
 
+                        <Tab onClick={() => handleTabSelect("Reports")} icon="fa-solid fa-chart-bar">
+                            Reports
+                            {expiredNichesCount > 0 && (
+                                <span className="bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center ml-2">
+                                    {expiredNichesCount}
+                                </span>
+                            )}
+                        </Tab>
+
                         {/* Audit Logs*/}
                         {sessionStorage.getItem("permissions").split(",").includes("view_audit") && <Tab onClick={() => handleTabSelect("Audit")} icon="fa-solid fa-clipboard-list">Audit Logs</Tab>}
 
@@ -438,14 +547,76 @@ export default function DashboardPage() {
                         {(() => {
                             const tabs = {
                                 Holders: {
-                                    columns: [], // Holders uses custom grid layout instead of table
+                                    columns: [
+                                        { label: "", key: "_select" },
+                                        { label: "ID", key: "id", type: 'number' },
+                                        { label: "Name", key: "name", type: 'text' },
+                                        { label: "Contact Number", key: "contactNumber", type: 'text' },
+                                        { label: "Email Address", key: "email", type: 'text' },
+                                        { label: "Actions", key: "_actions" },
+                                    ],
                                     toolbarButtons: [
                                         { label: 'Add Holder', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
                                         { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: (e) => { handleEditClick(e) } },
                                         { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: (e) => { handleRemoveSelected(e) } },
                                     ],
-                                    rowRenderer: () => null, // Not used for custom grid
-                                    customComponent: HoldersGrid // Use custom grid component
+                                    rowRenderer: (row) => {
+                                        // Determine status indicator based on expiry status
+                                        let statusIndicator = null;
+                                        
+                                        if (row.expiryStatus === 'EXPIRED') {
+                                            statusIndicator = (
+                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                    <i className="fa-solid fa-exclamation-triangle mr-1"></i>
+                                                    EXPIRED
+                                                </span>
+                                            );
+                                        } else if (row.expiryStatus === 'CRITICAL') {
+                                            statusIndicator = (
+                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                                                    <i className="fa-solid fa-clock mr-1"></i>
+                                                    {row.earliestExpiryDays} days left
+                                                </span>
+                                            );
+                                        } else if (row.expiryStatus === 'WARNING') {
+                                            statusIndicator = (
+                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                                                    <i className="fa-solid fa-warning mr-1"></i>
+                                                    {row.earliestExpiryDays} days left
+                                                </span>
+                                            );
+                                        } else if (row.expiryStatus === 'EXPIRING') {
+                                            statusIndicator = (
+                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                                                    <i className="fa-solid fa-calendar-alt mr-1"></i>
+                                                    Expiring in {row.earliestExpiryDays} days
+                                                </span>
+                                            );
+                                        }
+                                        
+                                        return (
+                                            <>
+                                                <td className="p-2">{row.id ?? ''}</td>
+                                                <td className="p-2">
+                                                    <div className="flex items-center gap-2">
+                                                        {row.name ?? ''}
+                                                        {statusIndicator}
+                                                    </div>
+                                                </td>
+                                                <td className="p-2">{row.contactNumber ?? ''}</td>
+                                                <td className="p-2">{row.email ?? ''}</td>
+                                                <td className="p-2">
+                                                    <button
+                                                        onClick={() => handleViewHolderDetails(row)}
+                                                        className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                                                    >
+                                                        <i className="fa-solid fa-eye mr-1"></i>
+                                                        Show Details
+                                                    </button>
+                                                </td>
+                                            </>
+                                        );
+                                    }
                                 },
                                 Analytics: {
                                     columns: [], // Analytics doesn't use the standard table format
@@ -498,6 +669,12 @@ export default function DashboardPage() {
                                             <td className="p-2">{row.role ?? ''}</td>
                                         </>
                                     )
+                                },
+                                Reports: {
+                                    columns: [], // Reports doesn't use the standard table format
+                                    toolbarButtons: [],
+                                    rowRenderer: () => null, // Not used for reports
+                                    customComponent: Reports // Use custom component instead
                                 }
                                 // Add other tabs here
                             }
@@ -507,74 +684,189 @@ export default function DashboardPage() {
 
                             if (tableLoading) return <LoadingPage />;
 
-                            // Special handling for custom components (Analytics and Holders)
+                            // Special handling for Analytics custom component
                             if (cfg.customComponent) {
                                 const CustomComponent = cfg.customComponent;
-                                if (selectedTab === 'Analytics') {
-                                    return <CustomComponent />;
-                                } else if (selectedTab === 'Holders') {
-                                    return (
-                                        <div className="space-y-4">
-                                            {/* Toolbar for Holders */}
-                                            <div className="flex flex-wrap gap-2 mb-4">
-                                                {cfg.toolbarButtons.map((button, index) => (
-                                                    <button
-                                                        key={index}
-                                                        onClick={button.onClick}
-                                                        className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                                                            button.bg || 'bg-gray-200'
-                                                        } ${
-                                                            button.textClass || 'text-gray-700'
-                                                        } hover:opacity-90`}
-                                                    >
-                                                        {button.icon && <i className={button.icon}></i>}
-                                                        {button.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            {/* Search bar */}
-                                            <div className="mb-4">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Search holders..."
-                                                    value={searchQuery}
-                                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                                />
-                                            </div>
-                                            {/* Holders Grid */}
-                                            <CustomComponent
-                                                holders={elements}
-                                                searchQuery={searchQuery}
-                                                selectedItems={selectedElements}
-                                                onSelectHolder={handleSelectRow}
-                                                onViewHolder={(holder) => {
-                                                    setShowCustomerModal(true);
-                                                    setHolderInfo(holder);
-                                                }}
-                                                loading={tableLoading}
-                                            />
-                                        </div>
-                                    );
+                                // Pass special props to Reports component
+                                if (selectedTab === 'Reports') {
+                                    return <CustomComponent onViewDetails={handleViewHolderDetails} />;
                                 }
+                                return <CustomComponent />;
                             }
 
                             return (
-                                <TabContent
-                                    title={selectedTab}
-                                    searchQuery={searchQuery}
-                                    onSearchChange={setSearchQuery}
-                                    toolbarButtons={cfg.toolbarButtons}
-                                    columns={cfg.columns}
-                                    data={elements.length > 0 ? elements : []}
-                                    selectedItems={selectedElements}
-                                    onSelectAll={handleSelectAll}
-                                    onSelectRow={handleSelectRow}
-                                    getRowKey={(row) => row.id}
-                                    onFilterChange={(value) => setFilter(value)}
-                                >
-                                    {cfg.rowRenderer}
-                                </TabContent>
+                                <>
+                                    {/* Toolbar */}
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {cfg.toolbarButtons.map((button, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={button.onClick}
+                                                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                                                    button.bg || 'bg-gray-200'
+                                                } ${
+                                                    button.textClass || 'text-gray-700'
+                                                } hover:opacity-90`}
+                                            >
+                                                {button.icon && <i className={button.icon}></i>}
+                                                {button.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    
+                                    {/* Search and Filter for Holders */}
+                                    {selectedTab === 'Holders' && (
+                                        <div className="flex gap-3 mb-4">
+                                            <div className="flex-1">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search..."
+                                                    value={filter}
+                                                    onChange={(e) => setFilter(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                                />
+                                            </div>
+                                            <div className="w-48">
+                                                <select
+                                                    value={searchFilter}
+                                                    onChange={(e) => setSearchFilter(e.target.value)}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                                >
+                                                    <option value="holder">Search by Holder</option>
+                                                    <option value="deceased">Search by Deceased</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Other tabs search */}
+                                    {selectedTab !== 'Holders' && selectedTab !== 'Analytics' && (
+                                        <div className="mb-4">
+                                            <input
+                                                type="text"
+                                                placeholder="Search..."
+                                                value={filter}
+                                                onChange={(e) => setFilter(e.target.value)}
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Table */}
+                                    <div className="overflow-auto w-full">
+                                        {(() => {
+                                            // Calculate pagination for Holders and Audit tabs
+                                            const shouldPaginate = selectedTab === 'Holders' || selectedTab === 'Audit';
+                                            let displayData = filteredData;
+                                            let totalPages = 1;
+                                            
+                                            if (shouldPaginate && filteredData) {
+                                                totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                                                const startIndex = (currentPage - 1) * itemsPerPage;
+                                                const endIndex = startIndex + itemsPerPage;
+                                                displayData = filteredData.slice(startIndex, endIndex);
+                                            }
+                                            
+                                            return (
+                                                <>
+                                                    <Table
+                                                        columns={cfg.columns.map(col => col.label)}
+                                                        data={displayData}
+                                                        selectedItems={selectedElements}
+                                                        onSelectAll={handleSelectAll}
+                                                        onSelectRow={handleSelectRow}
+                                                        getRowKey={(row) => row.id}
+                                                        getRowClassName={selectedTab === 'Holders' ? (row) => {
+                                                            let baseClassName = "border-b border-black/10 hover:bg-black/5 text-zinc-700";
+                                                            
+                                                            // Use camelCase field names that match the actual data
+                                                            if (row.expiryStatus === 'EXPIRED') {
+                                                                return `${baseClassName} !bg-red-100 !border-l-4 !border-red-600`;
+                                                            } else if (row.expiryStatus === 'CRITICAL') {
+                                                                return `${baseClassName} !bg-red-100 !border-l-4 !border-red-500`;
+                                                            } else if (row.expiryStatus === 'WARNING') {
+                                                                return `${baseClassName} !bg-orange-100 !border-l-4 !border-orange-500`;
+                                                            } else if (row.expiryStatus === 'EXPIRING') {
+                                                                return `${baseClassName} !bg-yellow-100 !border-l-4 !border-yellow-500`;
+                                                            }
+                                                            
+                                                            return `${baseClassName} even:bg-[#fafafa]`;
+                                                        } : null}
+                                                    >
+                                                        {cfg.rowRenderer}
+                                                    </Table>
+                                                    
+                                                    {/* Pagination Controls */}
+                                                    {shouldPaginate && filteredData && filteredData.length > itemsPerPage && (
+                                                        <div className="flex items-center justify-between mt-4 px-4 py-3 bg-white border-t border-gray-200">
+                                                            <div className="flex items-center text-sm text-gray-700">
+                                                                <span>
+                                                                    Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredData.length)} to{' '}
+                                                                    {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} results
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center space-x-2">
+                                                                <button
+                                                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                                    disabled={currentPage === 1}
+                                                                    className={`px-3 py-1 rounded-md ${
+                                                                        currentPage === 1
+                                                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                                                    }`}
+                                                                >
+                                                                    Previous
+                                                                </button>
+                                                                
+                                                                {/* Page Numbers */}
+                                                                <div className="flex space-x-1">
+                                                                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                                                        let pageNumber;
+                                                                        if (totalPages <= 5) {
+                                                                            pageNumber = i + 1;
+                                                                        } else if (currentPage <= 3) {
+                                                                            pageNumber = i + 1;
+                                                                        } else if (currentPage >= totalPages - 2) {
+                                                                            pageNumber = totalPages - 4 + i;
+                                                                        } else {
+                                                                            pageNumber = currentPage - 2 + i;
+                                                                        }
+                                                                        
+                                                                        return (
+                                                                            <button
+                                                                                key={pageNumber}
+                                                                                onClick={() => setCurrentPage(pageNumber)}
+                                                                                className={`px-3 py-1 rounded-md ${
+                                                                                    currentPage === pageNumber
+                                                                                        ? 'bg-blue-500 text-white'
+                                                                                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                                                                }`}
+                                                                            >
+                                                                                {pageNumber}
+                                                                            </button>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                                
+                                                                <button
+                                                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                                                    disabled={currentPage === totalPages}
+                                                                    className={`px-3 py-1 rounded-md ${
+                                                                        currentPage === totalPages
+                                                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                                                    }`}
+                                                                >
+                                                                    Next
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                </>
                             )
                             
                         })()}

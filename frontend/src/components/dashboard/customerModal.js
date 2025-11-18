@@ -330,7 +330,7 @@ export default function CustomerModal({ info, onClose }) {
                                             <div className="flex justify-between items-start mb-4">
                                                 <div>
                                                     <h3 className="text-lg font-semibold text-gray-800">{niche.location}</h3>
-                                                    <div className="flex gap-4 text-sm text-gray-600">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
                                                         <span>Type: {niche.niche_type}</span>
                                                         <span>Status: <span 
                                                             className={`px-2 py-1 rounded text-xs ${
@@ -342,7 +342,31 @@ export default function CustomerModal({ info, onClose }) {
                                                             title="Status is automatically calculated based on occupancy"
                                                         >{niche.status}</span></span>
                                                         <span>Deceased: {niche.deceased_count}/4</span>
+                                                        <span>Availment: {niche.date_of_availment ? 
+                                                            new Date(niche.date_of_availment).toLocaleDateString() : 
+                                                            'Not set'}</span>
+                                                        <span className="md:col-span-2">
+                                                            Expiry: {niche.date_of_expiry ? 
+                                                                new Date(niche.date_of_expiry).toLocaleDateString() : 
+                                                                'Calculating...'}
+                                                            {niche.days_until_expiry !== undefined && (
+                                                                <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                                                                    niche.is_expiring_soon ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                                                                }`}>
+                                                                    {niche.days_until_expiry === 0 ? 'EXPIRED' : 
+                                                                     niche.days_until_expiry === 1 ? '1 day left' : 
+                                                                     niche.days_until_expiry < 30 ? `${niche.days_until_expiry} days left` :
+                                                                     niche.days_until_expiry < 365 ? `${Math.ceil(niche.days_until_expiry / 30)} months left` :
+                                                                     `${Math.ceil(niche.days_until_expiry / 365)} years left`}
+                                                                </span>
+                                                            )}
+                                                        </span>
                                                     </div>
+                                                    {niche.is_expiring_soon && (
+                                                        <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded text-sm text-orange-700">
+                                                            ⚠️ <strong>Contract Expiry Warning:</strong> This niche expires within one year!
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="flex gap-2">
                                                     <button
@@ -392,6 +416,9 @@ export default function CustomerModal({ info, onClose }) {
                                                                     <div className="flex-1">
                                                                         <h5 className="font-medium text-gray-800">{deceased.name}</h5>
                                                                         <div className="text-xs text-gray-600 space-y-1">
+                                                                            {deceased.slot && (
+                                                                                <div className="font-medium text-blue-600">Slot: {deceased.slot}</div>
+                                                                            )}
                                                                             {deceased.date_of_death && (
                                                                                 <div>Death: {new Date(deceased.date_of_death).toLocaleDateString()}</div>
                                                                             )}

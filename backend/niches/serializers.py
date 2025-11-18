@@ -14,11 +14,21 @@ class NicheSerializer(serializers.ModelSerializer):
     deceased_records = DeceasedSerializer(many=True, read_only=True)
     deceased_count = serializers.ReadOnlyField(source='get_deceased_count')
     holder_name = serializers.ReadOnlyField(source='holder.name')
+    days_until_expiry = serializers.SerializerMethodField()
+    is_expiring_soon = serializers.SerializerMethodField()
     
     class Meta:
         model = Niche
         fields = '__all__'
-        read_only_fields = ('status', 'created_at', 'updated_at')  # Make status read-only
+        read_only_fields = ('status', 'date_of_expiry', 'created_at', 'updated_at')  # Keep expiry read-only since it's auto-calculated
+    
+    def get_days_until_expiry(self, obj):
+        """Get number of days until expiry"""
+        return obj.days_until_expiry()
+    
+    def get_is_expiring_soon(self, obj):
+        """Check if niche is expiring soon"""
+        return obj.is_expiring_soon()
     
     def validate(self, data):
         """Validate that customer doesn't exceed 4 niches"""
@@ -39,11 +49,21 @@ class NicheListSerializer(serializers.ModelSerializer):
     """Simplified serializer for listing niches without nested deceased records"""
     deceased_count = serializers.ReadOnlyField(source='get_deceased_count')
     holder_name = serializers.ReadOnlyField(source='holder.name')
+    days_until_expiry = serializers.SerializerMethodField()
+    is_expiring_soon = serializers.SerializerMethodField()
     
     class Meta:
         model = Niche
-        fields = ['id', 'location', 'niche_type', 'status', 'amount', 'holder', 'holder_name', 'deceased_count', 'created_at']
-        read_only_fields = ('status',)  # Make status read-only in list view too
+        fields = ['id', 'location', 'niche_type', 'status', 'holder', 'holder_name', 'deceased_count', 'date_of_availment', 'date_of_expiry', 'days_until_expiry', 'is_expiring_soon', 'created_at']
+        read_only_fields = ('status', 'date_of_expiry', 'days_until_expiry', 'is_expiring_soon')  # Make calculated fields read-only
+
+    def get_days_until_expiry(self, obj):
+        """Get number of days until expiry"""
+        return obj.days_until_expiry()
+    
+    def get_is_expiring_soon(self, obj):
+        """Check if niche is expiring soon"""
+        return obj.is_expiring_soon()
 
 
 class NicheIDSerializer(serializers.ModelSerializer):
