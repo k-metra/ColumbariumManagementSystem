@@ -349,3 +349,49 @@ def get_expired_niches_count(request):
         
     except Exception as e:
         return Response({"error": f"Error fetching expired count: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def search_by_reference_number(request):
+    """Search for customers/holders by niche reference number (niche ID)"""
+    authorization_header = request.headers.get("Authorization")
+    
+    if not authorization_header:
+        return Response({"error":"Authorization header is missing."}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    is_session_valid = verify_session(authorization_header)
+    
+    if not is_session_valid:
+        return Response({"error":"Invalid or expired session."}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    user = get_user_from_session(authorization_header)
+    
+    if not user.has_permission("view_dashboard"):
+        return Response({"error":"You do not have permission to view this resource."}, status=status.HTTP_403_FORBIDDEN)
+    
+    query = request.GET.get('query', '').strip()
+    
+    if not query:
+        return Response([], status=status.HTTP_200_OK)
+    
+    try:
+        # Import here to avoid circular imports
+        from niches.models import Niche
+        
+        # Try to find a niche with the given reference number (ID)
+        try:
+            niche_id = int(query)
+            niche = Niche.objects.select_related('holder').get(id=niche_id)
+            
+            if niche.holder:
+                # Return the holder/customer
+                serializer = CustomerSerializer(niche.holder)
+                return Response([serializer.data], status=status.HTTP_200_OK)
+            else:
+                return Response([], status=status.HTTP_200_OK)
+                
+        except (ValueError, Niche.DoesNotExist):
+            # If not a valid integer or niche not found, return empty results
+            return Response([], status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({"error": f"Error searching by reference number: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

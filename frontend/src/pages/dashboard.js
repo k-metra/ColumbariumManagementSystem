@@ -40,7 +40,7 @@ export default function DashboardPage() {
     const [openAccountModal, setOpenAccountModal] = useState(false);
     const accountModalRef = useRef(null);
     const [filter, setFilter] = useState("");
-    const [searchFilter, setSearchFilter] = useState("holder"); // "holder" or "deceased"
+    const [searchFilter, setSearchFilter] = useState("holder"); // "holder", "deceased", or "refno"
     const [filteredData, setFilteredData] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
@@ -422,6 +422,29 @@ export default function DashboardPage() {
                 }
             }
 
+            if (selectedTab === 'Holders' && searchFilter === 'refno') {
+                // Search by reference number - make API call to find holders by niche reference number
+                try {
+                    const response = await fetch(`http://localhost:8000/api/customers/search-by-refno/?query=${encodeURIComponent(filter)}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Session-Token': sessionStorage.getItem('token'),
+                            'Authorization': `Session ${sessionStorage.getItem('token')}`
+                        },
+                        credentials: 'include',
+                    });
+
+                    if (response.ok) {
+                        const refNoSearchResults = await response.json();
+                        setFilteredData(refNoSearchResults);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Reference number search failed:', error);
+                }
+            }
+
             // Regular client-side filtering
             const filtered = elements.filter(el => {
                 if (selectedTab === 'Holders') {
@@ -734,6 +757,7 @@ export default function DashboardPage() {
                                                 >
                                                     <option value="holder">Search by Holder</option>
                                                     <option value="deceased">Search by Deceased</option>
+                                                    <option value="refno">Search by Ref No.</option>
                                                 </select>
                                             </div>
                                         </div>

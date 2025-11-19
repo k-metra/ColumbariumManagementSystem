@@ -8,7 +8,8 @@ export default function DeceasedForm({ deceased, niche, onSave, onCancel }) {
         date_of_death: deceased?.date_of_death || '',
         interment_date: deceased?.interment_date || '',
         relationship_to_holder: deceased?.relationship_to_holder || '',
-        slot: deceased?.slot || ''
+        slot: deceased?.slot || '',
+        disposition_after_expiry: deceased?.disposition_after_expiry || 'Communal Ossuary'
     });
     const [availableSlots, setAvailableSlots] = useState([]);
     const [deathCertificate, setDeathCertificate] = useState(null);
@@ -88,7 +89,7 @@ export default function DeceasedForm({ deceased, niche, onSave, onCancel }) {
                 formDataToSend.append(key, formData[key]);
             });
 
-            // Append file if selected
+            // Only append file if a new one is selected
             if (deathCertificate) {
                 formDataToSend.append('death_certificate', deathCertificate);
             }
@@ -272,6 +273,30 @@ export default function DeceasedForm({ deceased, niche, onSave, onCancel }) {
                             <option value="Friend">Friend</option>
                             <option value="Other">Other</option>
                         </select>
+                    </div>
+
+                    <div>
+                        <label htmlFor="disposition_after_expiry" className="block text-sm font-medium text-gray-700 mb-1">
+                            Disposition After Expiry *
+                        </label>
+                        <select
+                            value={formData.disposition_after_expiry}
+                            onChange={(e) => {
+                                setFormData({
+                                    ...formData,
+                                    disposition_after_expiry: e.target.value
+                                });
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                        >
+                            <option value="Communal Ossuary">Communal Ossuary</option>
+                            <option value="Returned to Family">Returned to Family</option>
+                            <option value="Unclaimed Remains Disposal">Unclaimed Remains Disposal</option>
+                        </select>
+                        <p className="text-sm text-gray-600 mt-1">
+                            Where the remains will be transferred after niche lease expires
+                        </p>
                     </div>
 
                     <div>

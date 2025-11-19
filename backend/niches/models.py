@@ -170,6 +170,18 @@ class Deceased(models.Model):
         help_text='Upload death certificate (PDF or image format)'
     )
     
+    # Disposition after expiry
+    disposition_after_expiry = models.CharField(
+        max_length=50,
+        default='Communal Ossuary',
+        choices=[
+            ('Communal Ossuary', 'Communal Ossuary'),
+            ('Returned to Family', 'Returned to Family'),
+            ('Unclaimed Remains Disposal', 'Unclaimed Remains Disposal'),
+        ],
+        help_text='Where the remains will go after niche lease expires'
+    )
+    
     # Additional Information
     notes = models.TextField(blank=True, null=True, help_text='Additional notes or information')
     

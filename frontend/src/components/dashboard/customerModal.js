@@ -330,6 +330,9 @@ export default function CustomerModal({ info, onClose }) {
                                             <div className="flex justify-between items-start mb-4">
                                                 <div>
                                                     <h3 className="text-lg font-semibold text-gray-800">{niche.location}</h3>
+                                                    <div className="text-xs text-blue-600 font-medium mb-2">
+                                                        Reference No: {niche.id}
+                                                    </div>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
                                                         <span>Type: {niche.niche_type}</span>
                                                         <span>Status: <span 
@@ -427,6 +430,18 @@ export default function CustomerModal({ info, onClose }) {
                                                                             )}
                                                                             {deceased.relationship_to_holder && (
                                                                                 <div>Relation: {deceased.relationship_to_holder}</div>
+                                                                            )}
+                                                                            {deceased.disposition_after_expiry && (
+                                                                                <div className={`${
+                                                                                    niche.days_until_expiry !== undefined && niche.days_until_expiry <= 0 
+                                                                                        ? 'bg-yellow-100 border border-yellow-300 px-2 py-1 rounded font-semibold text-yellow-800'
+                                                                                        : ''
+                                                                                }`}>
+                                                                                    Disposition: {deceased.disposition_after_expiry.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                                                                    {niche.days_until_expiry !== undefined && niche.days_until_expiry <= 0 && (
+                                                                                        <span className="ml-2 text-xs">⚠️ EXPIRED</span>
+                                                                                    )}
+                                                                                </div>
                                                                             )}
                                                                         </div>
                                                                     </div>
