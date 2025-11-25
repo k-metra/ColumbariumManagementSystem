@@ -35,6 +35,7 @@ class Niche(models.Model):
         ('Full', 'Full'),
         ('Maintenance', 'Maintenance'),
         ('Reserved', 'Reserved'),
+        ('Expired', 'Expired'),
     ])
     max_deceased = models.PositiveIntegerField(default=4, help_text='Maximum number of deceased allowed in this niche')
     
@@ -47,10 +48,22 @@ class Niche(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['holder', 'location']  # Prevent duplicate locations for same holder
+        constraints = [
+            models.UniqueConstraint(fields=['location'], name='unique_niche_location')
+        ]
         
     def __str__(self):
-        return f"{self.holder.name} - {self.location} ({self.status})"
+        return f"{self.holder.name if self.holder else 'Unassigned'} - {self.location} ({self.status})"
+    
+    def clean(self):
+        """Validate that niche location is unique"""
+        # Check for duplicate locations
+        existing_niche = Niche.objects.filter(location=self.location)
+        if self.pk:  # If updating, exclude current instance
+            existing_niche = existing_niche.exclude(pk=self.pk)
+        
+        if existing_niche.exists():
+            raise ValidationError(f"A niche with location '{self.location}' already exists.")
     
     def get_deceased_count(self):
         """Get current number of deceased in this niche"""
@@ -83,10 +96,15 @@ class Niche(models.Model):
         return None
     
     def update_status(self):
-        """Update status based on deceased count and holder assignment"""
+        """Update status based on deceased count, holder assignment, and lease expiry"""
         # Only update status if the niche has been saved and has a primary key
         if not self.pk:
             self.status = 'Available'
+            return
+        
+        # Check for lease expiry first (highest priority)
+        if self.date_of_expiry and timezone.now() > self.date_of_expiry:
+            self.status = 'Expired'
             return
             
         deceased_count = self.get_deceased_count()
@@ -105,6 +123,9 @@ class Niche(models.Model):
             self.status = 'Occupied'
     
     def save(self, *args, **kwargs):
+        # Run validation first
+        self.clean()
+        
         # Handle holder assignment changes
         old_holder = None
         if self.pk:
