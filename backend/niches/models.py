@@ -21,7 +21,7 @@ def validate_file_type(value):
 # Create your models here.
 class Niche(models.Model):
     # Owner relationship
-    holder = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='niches')
+    holder = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='niches', null=True, blank=True)
     
     # Niche details
     location = models.CharField(max_length=255, help_text='Location of the niche (e.g., Section A, Row 1, Column 3)')
@@ -39,7 +39,7 @@ class Niche(models.Model):
     max_deceased = models.PositiveIntegerField(default=4, help_text='Maximum number of deceased allowed in this niche')
     
     # Contract dates
-    date_of_availment = models.DateTimeField(default=timezone.now, help_text='Date when the niche was availed/purchased')
+    date_of_availment = models.DateTimeField(blank=True, null=True, help_text='Date when the niche was availed/purchased by the holder')
     date_of_expiry = models.DateTimeField(blank=True, null=True, help_text='Automatically calculated as 50 years from date of availment')
     
     # Timestamps
@@ -83,48 +83,66 @@ class Niche(models.Model):
         return None
     
     def update_status(self):
-        """Update status based on deceased count"""
+        """Update status based on deceased count and holder assignment"""
         # Only update status if the niche has been saved and has a primary key
         if not self.pk:
             self.status = 'Available'
             return
             
         deceased_count = self.get_deceased_count()
-        if deceased_count == 0:
+        
+        if not self.holder:
+            # No holder assigned
             self.status = 'Available'
+        elif deceased_count == 0:
+            # Has holder but no deceased records
+            self.status = 'Reserved'
         elif deceased_count >= self.max_deceased:
+            # At maximum capacity
             self.status = 'Full'
         else:
+            # Has some deceased records but not full
             self.status = 'Occupied'
     
     def save(self, *args, **kwargs):
-        # Validate niche limit per holder
-        if not self.pk:  # Only check on creation
+        # Handle holder assignment changes
+        old_holder = None
+        if self.pk:
+            try:
+                old_instance = Niche.objects.get(pk=self.pk)
+                old_holder = old_instance.holder
+            except Niche.DoesNotExist:
+                pass
+        
+        # Validate niche limit per holder (only if holder is assigned)
+        if not self.pk and self.holder:  # Only check on creation and if holder exists
             existing_niches = Niche.objects.filter(holder=self.holder).count()
             if existing_niches >= 4:
                 raise ValidationError("Each holder can have a maximum of 4 niches.")
-            
-            # For new instances, set status to Available since there can't be any deceased yet
+        
+        # Handle date of availment based on holder assignment
+        if self.holder and not old_holder:
+            # New holder assignment - set availment date if not already set
+            if not self.date_of_availment:
+                self.date_of_availment = timezone.now()
+        elif not self.holder and old_holder:
+            # Holder removed - clear dates
+            self.date_of_availment = None
+            self.date_of_expiry = None
+        
+        if not self.pk:
+            # For new instances, set status to Available
             self.status = 'Available'
-            # Always calculate expiry date for new instances
-            self.date_of_expiry = self.calculate_expiry_date()
         else:
             # For existing instances, update status based on current deceased count
             self.update_status()
             
-            # Check if availment date has changed and recalculate expiry
-            if self.pk:
-                try:
-                    old_instance = Niche.objects.get(pk=self.pk)
-                    if old_instance.date_of_availment != self.date_of_availment:
-                        self.date_of_expiry = self.calculate_expiry_date()
-                except Niche.DoesNotExist:
-                    # If for some reason the old instance doesn't exist, recalculate anyway
-                    self.date_of_expiry = self.calculate_expiry_date()
-            else:
-                # Always recalculate if no expiry date exists
-                if not self.date_of_expiry:
-                    self.date_of_expiry = self.calculate_expiry_date()
+        # Calculate expiry date if we have both holder and availment date
+        if self.holder and self.date_of_availment:
+            self.date_of_expiry = self.calculate_expiry_date()
+        elif not self.holder:
+            # No holder means no expiry date
+            self.date_of_expiry = None
         
         super().save(*args, **kwargs)
 
