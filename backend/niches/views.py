@@ -153,14 +153,33 @@ def delete_niches(request):
         return Response({'error': 'No niche IDs provided'}, status=status.HTTP_400_BAD_REQUEST)
 
     deleted_ids = []
+    errors = []
+    
     for niche_id in niche_ids:
         try:
             niche = Niche.objects.get(id=niche_id)
+            
+            # Check if niche is occupied (has deceased records)
+            if niche.deceased_records.exists():
+                errors.append(f"Cannot delete niche {niche.location} (ID: {niche_id}) - it contains deceased records")
+                continue
+                
             niche.delete()
             deleted_ids.append(niche_id)
         except Niche.DoesNotExist:
             continue  # Skip non-existent niches
 
+    if errors and not deleted_ids:
+        # All deletions failed
+        return Response({'error': '; '.join(errors)}, status=status.HTTP_400_BAD_REQUEST)
+    elif errors:
+        # Some deletions failed, some succeeded
+        return Response({
+            'ids': deleted_ids, 
+            'warnings': errors,
+            'message': f'Deleted {len(deleted_ids)} niches, but {len(errors)} failed due to occupied status'
+        }, status=status.HTTP_207_MULTI_STATUS)
+    
     return Response({'ids': deleted_ids}, status=status.HTTP_200_OK)
 
 # Deceased Views
