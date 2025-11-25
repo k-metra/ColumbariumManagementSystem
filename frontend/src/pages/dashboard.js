@@ -582,15 +582,18 @@ export default function DashboardPage() {
 
                         {/* Tabs */}
                         <Tab onClick={() => handleTabSelect("Holders")} icon="fa-solid fa-users">Holders</Tab>
-
-                        <Tab onClick={() => handleTabSelect("Reports")} icon="fa-solid fa-chart-bar">
+                        
+                        <div className="flex flex-row items-center justify-center gap-1">
+                             <Tab onClick={() => handleTabSelect("Reports")} icon="fa-solid fa-chart-bar">
                             Reports
+                            </Tab>
                             {expiredNichesCount > 0 && (
-                                <span className="bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center ml-2">
+                                <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                                     {expiredNichesCount}
                                 </span>
                             )}
-                        </Tab>
+                        </div>
+    
 
                         <Tab onClick={() => handleTabSelect("Niches")} icon="fa-solid fa-boxes">Niches</Tab>
 
@@ -764,7 +767,8 @@ export default function DashboardPage() {
                                             'Available': 'bg-green-100 text-green-800',
                                             'Reserved': 'bg-blue-100 text-blue-800',
                                             'Occupied': 'bg-yellow-100 text-yellow-800', 
-                                            'Full': 'bg-red-100 text-red-800'
+                                            'Full': 'bg-red-100 text-red-800',
+                                            'Expired': 'bg-gray-100 text-gray-800'
                                         }[row.status] || 'bg-gray-100 text-gray-800';
                                         
                                         const { wall, row: rowNum, column } = parseNicheName(row.location);

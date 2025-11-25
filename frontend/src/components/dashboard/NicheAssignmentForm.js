@@ -28,7 +28,7 @@ export default function NicheAssignmentForm({ holder, onSave, onCancel }) {
             if (response.ok) {
                 const niches = await response.json();
                 
-                // Filter niches: only show Available ones
+                // Filter niches: only show Available ones (exclude expired niches)
                 const availableOptions = niches
                     .filter(niche => niche.status === 'Available')
                     .map(niche => ({

@@ -239,7 +239,9 @@ export default function NicheDetailModal({ niche, onClose, onSave }) {
                                             nicheData.status === 'Available' ? 'bg-green-100 text-green-800' :
                                             nicheData.status === 'Reserved' ? 'bg-blue-100 text-blue-800' :
                                             nicheData.status === 'Occupied' ? 'bg-yellow-100 text-yellow-800' :
-                                            'bg-red-100 text-red-800'
+                                            nicheData.status === 'Full' ? 'bg-red-100 text-red-800' :
+                                            nicheData.status === 'Expired' ? 'bg-gray-100 text-gray-800' :
+                                            'bg-gray-100 text-gray-800'
                                         }`}>
                                             {nicheData.status}
                                         </span>

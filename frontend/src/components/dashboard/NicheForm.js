@@ -27,11 +27,54 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [fieldErrors, setFieldErrors] = useState({});
+    const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+    const [duplicateError, setDuplicateError] = useState('');
 
     // Build location string from individual fields
     const buildLocation = (wall, row, column) => {
         if (!wall || !row || !column) return '';
         return `Wall ${wall} - Row ${row} - Niche ${column}`;
+    };
+
+    // Check for duplicate niches
+    const checkForDuplicate = async (wall, row, column) => {
+        if (!wall || !row || !column) {
+            setDuplicateError('');
+            return;
+        }
+
+        const location = buildLocation(wall, row, column);
+        
+        // Don't check if this is the same location as the current niche being edited
+        if (niche && niche.location === location) {
+            setDuplicateError('');
+            return;
+        }
+
+        setCheckingDuplicate(true);
+        try {
+            const response = await fetch('http://localhost:8000/api/niches/list-all/', {
+                headers: {
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                    'Session-Token': sessionStorage.getItem('token')
+                }
+            });
+
+            if (response.ok) {
+                const niches = await response.json();
+                const existingNiche = niches.find(n => n.location === location);
+                
+                if (existingNiche) {
+                    setDuplicateError(`A niche already exists at this location (ID: ${existingNiche.id})`);
+                } else {
+                    setDuplicateError('');
+                }
+            }
+        } catch (error) {
+            console.error('Error checking for duplicate:', error);
+        } finally {
+            setCheckingDuplicate(false);
+        }
     };
 
     // Validation
@@ -68,10 +111,26 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
             validateField(name, value);
         }
         
-        setFormData({
+        const newFormData = {
             ...formData,
             [name]: value
-        });
+        };
+        
+        setFormData(newFormData);
+        
+        // Check for duplicates when any location field changes
+        if (['wall', 'row', 'column'].includes(name)) {
+            // Debounce the duplicate check
+            setTimeout(() => {
+                if (name === 'wall') {
+                    checkForDuplicate(value, newFormData.row, newFormData.column);
+                } else if (name === 'row') {
+                    checkForDuplicate(newFormData.wall, value, newFormData.column);
+                } else if (name === 'column') {
+                    checkForDuplicate(newFormData.wall, newFormData.row, value);
+                }
+            }, 500);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -86,6 +145,12 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
 
         if (!isValid) {
             setError('Please fix the validation errors before submitting');
+            setLoading(false);
+            return;
+        }
+
+        if (duplicateError) {
+            setError('Cannot create duplicate niche. Please change the location.');
             setLoading(false);
             return;
         }
@@ -237,13 +302,28 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
                     </div>
 
                     {/* Location Preview */}
-                    <div className="bg-gray-50 p-3 rounded-md">
+                    <div className={`p-3 rounded-md ${
+                        duplicateError ? 'bg-red-50 border border-red-200' : 'bg-gray-50'
+                    }`}>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Location Preview
+                            {checkingDuplicate && (
+                                <span className="ml-2 text-sm text-blue-600">
+                                    <i className="fa-solid fa-spinner fa-spin"></i> Checking...
+                                </span>
+                            )}
                         </label>
-                        <p className="text-sm text-gray-900">
+                        <p className={`text-sm ${
+                            duplicateError ? 'text-red-900' : 'text-gray-900'
+                        }`}>
                             {previewLocation || 'Fill in the fields above to see preview'}
                         </p>
+                        {duplicateError && (
+                            <p className="text-sm text-red-600 mt-1 font-medium">
+                                <i className="fa-solid fa-exclamation-triangle mr-1"></i>
+                                {duplicateError}
+                            </p>
+                        )}
                     </div>
 
                     <div>
@@ -337,7 +417,7 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
                         </button>
                         <button
                             type="submit"
-                            disabled={loading || Object.keys(fieldErrors).length > 0}
+                            disabled={loading || Object.keys(fieldErrors).length > 0 || duplicateError || checkingDuplicate}
                             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading ? 'Saving...' : (niche ? 'Update Niche' : 'Create Niche')}
