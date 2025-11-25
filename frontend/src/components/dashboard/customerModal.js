@@ -1,6 +1,7 @@
 import { IoClose } from "react-icons/io5";
 import { useEffect, useState, useRef } from 'react';
 import NicheForm from './NicheForm';
+import NicheAssignmentForm from './NicheAssignmentForm';
 import DeceasedForm from './DeceasedForm';
 
 export default function CustomerModal({ info, onClose }) {
@@ -11,6 +12,7 @@ export default function CustomerModal({ info, onClose }) {
     const [loading, setLoading] = useState(false);
     const [selectedNiche, setSelectedNiche] = useState(null);
     const [showNicheForm, setShowNicheForm] = useState(false);
+    const [showNicheAssignmentForm, setShowNicheAssignmentForm] = useState(false);
     const [showDeceasedForm, setShowDeceasedForm] = useState(false);
     const [editingNiche, setEditingNiche] = useState(null);
     const [editingDeceased, setEditingDeceased] = useState(null);
@@ -150,8 +152,8 @@ export default function CustomerModal({ info, onClose }) {
 
     // Add/Edit/Delete handlers
     const handleAddNiche = () => {
-        setEditingNiche(null);
-        setShowNicheForm(true);
+        // Use assignment form for assigning existing niches to holders
+        setShowNicheAssignmentForm(true);
     };
 
     const handleEditNiche = (niche) => {
@@ -558,6 +560,20 @@ export default function CustomerModal({ info, onClose }) {
                     onCancel={() => {
                         setShowNicheForm(false);
                         setEditingNiche(null);
+                    }}
+                />
+            )}
+
+            {/* Niche Assignment Form Modal */}
+            {showNicheAssignmentForm && (
+                <NicheAssignmentForm
+                    holder={info}
+                    onSave={(assignedNiche) => {
+                        setShowNicheAssignmentForm(false);
+                        fetchNiches(); // Refresh the niches list
+                    }}
+                    onCancel={() => {
+                        setShowNicheAssignmentForm(false);
                     }}
                 />
             )}
