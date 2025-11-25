@@ -1,82 +1,76 @@
 import { useState, useEffect } from 'react';
-import Select from 'react-select';
 
 export default function NicheForm({ niche, holder, onSave, onCancel }) {
-    // Predefined niche locations
-    const allLocations = [
-        "Wall 3 – Row 2 – Niche 4",
-        "Wall 1 – Row 4 – Niche 2", 
-        "Wall 4 – Row 1 – Niche 5",
-        "Wall 2 – Row 3 – Niche 1",
-        "Wall 1 – Row 2 – Niche 3",
-        "Wall 4 – Row 4 – Niche 4",
-        "Wall 2 – Row 1 – Niche 5", 
-        "Wall 3 – Row 3 – Niche 2",
-        "Wall 4 – Row 2 – Niche 1",
-        "Wall 1 – Row 3 – Niche 4"
-    ];
+    // Parse existing niche location if editing
+    const parseNicheLocation = (location) => {
+        if (!location) return { wall: '', row: '', column: '' };
+        // Parse "Wall X - Row Y - Niche Z" format
+        const parts = location.split(' - ');
+        const wall = parts[0]?.replace('Wall ', '') || '';
+        const row = parts[1]?.replace('Row ', '') || '';
+        const column = parts[2]?.replace('Niche ', '') || '';
+        return { wall, row, column };
+    };
+
+    const { wall: initialWall, row: initialRow, column: initialColumn } = parseNicheLocation(niche?.location);
 
     const [formData, setFormData] = useState({
         holder: holder?.id || '',
-        location: niche?.location || '',
+        wall: initialWall,
+        row: initialRow,
+        column: initialColumn,
         niche_type: niche?.niche_type || 'Granite',
         date_of_availment: niche?.date_of_availment ? 
             new Date(niche.date_of_availment).toISOString().split('T')[0] : 
             new Date().toISOString().split('T')[0]
     });
-    const [availableLocations, setAvailableLocations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
 
-    // Fetch taken locations when component mounts
-    useEffect(() => {
-        fetchTakenLocations();
-    }, []);
+    // Build location string from individual fields
+    const buildLocation = (wall, row, column) => {
+        if (!wall || !row || !column) return '';
+        return `Wall ${wall} - Row ${row} - Niche ${column}`;
+    };
 
-    const fetchTakenLocations = async () => {
-        try {
-            const response = await fetch('http://localhost:8000/api/niches/list-all/', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                    'Session-Token': sessionStorage.getItem('token')
+    // Validation
+    const validateField = (name, value) => {
+        const errors = { ...fieldErrors };
+        
+        switch (name) {
+            case 'wall':
+            case 'row':
+            case 'column':
+                if (!value) {
+                    errors[name] = 'This field is required';
+                } else if (!/^\d+$/.test(value)) {
+                    errors[name] = 'Must be a number';
+                } else if (parseInt(value) <= 0) {
+                    errors[name] = 'Must be a positive number';
+                } else {
+                    delete errors[name];
                 }
-            });
-
-            if (response.ok) {
-                const niches = await response.json();
-                const takenLocations = niches.map(n => n.location);
-                
-                // Filter out taken locations, but keep current location if editing
-                const available = allLocations.filter(location => 
-                    !takenLocations.includes(location) || location === niche?.location
-                );
-                
-                setAvailableLocations(available);
-            } else {
-                console.error('Failed to fetch niches');
-                // If API fails, show all locations as fallback
-                setAvailableLocations(allLocations);
-            }
-        } catch (error) {
-            console.error('Error fetching niches:', error);
-            // If API fails, show all locations as fallback
-            setAvailableLocations(allLocations);
+                break;
+            default:
+                break;
         }
+        
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
     };
 
     const handleChange = (e) => {
+        const { name, value } = e.target;
+        
+        // For numeric fields, validate input
+        if (['wall', 'row', 'column'].includes(name)) {
+            validateField(name, value);
+        }
+        
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
-
-    const handleLocationChange = (selectedOption) => {
-        setFormData({
-            ...formData,
-            location: selectedOption ? selectedOption.value : ''
+            [name]: value
         });
     };
 
@@ -85,7 +79,26 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
         setLoading(true);
         setError('');
 
+        // Validate all numeric fields
+        const isValid = ['wall', 'row', 'column'].every(field => 
+            validateField(field, formData[field])
+        );
+
+        if (!isValid) {
+            setError('Please fix the validation errors before submitting');
+            setLoading(false);
+            return;
+        }
+
         try {
+            // Build the location string
+            const location = buildLocation(formData.wall, formData.row, formData.column);
+            
+            const submitData = {
+                ...formData,
+                location: location
+            };
+
             const url = niche 
                 ? `http://localhost:8000/api/niches/edit/?niche_id=${niche.id}`
                 : 'http://localhost:8000/api/niches/create-new/';
@@ -99,7 +112,7 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'Session-Token': sessionStorage.getItem('token')
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(submitData)
             });
 
             if (response.ok) {
@@ -117,6 +130,9 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
         }
     };
 
+    // Live preview of the location
+    const previewLocation = buildLocation(formData.wall, formData.row, formData.column);
+
     return (
         <div className="fixed w-screen h-screen top-0 left-0 bg-black/30 flex justify-center items-center z-[60]">
             <div className="bg-white p-6 rounded-lg max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
@@ -131,74 +147,108 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label htmlFor="holder" className="block text-sm font-medium text-gray-700 mb-1">
-                            Holder
-                        </label>
-                        <input
-                            type="text"
-                            id="holder"
-                            value={holder?.name || 'Unknown Holder'}
-                            disabled
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
-                        />
-                        <input
-                            type="hidden"
-                            name="holder"
-                            value={formData.holder}
-                        />
+                    {holder && (
+                        <div>
+                            <label htmlFor="holder" className="block text-sm font-medium text-gray-700 mb-1">
+                                Holder
+                            </label>
+                            <input
+                                type="text"
+                                id="holder"
+                                value={holder?.name || 'Unknown Holder'}
+                                disabled
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
+                            />
+                            <input
+                                type="hidden"
+                                name="holder"
+                                value={formData.holder}
+                            />
+                        </div>
+                    )}
+
+                    {/* Niche Location Components */}
+                    <div className="grid grid-cols-3 gap-3">
+                        <div>
+                            <label htmlFor="wall" className="block text-sm font-medium text-gray-700 mb-1">
+                                Wall *
+                            </label>
+                            <input
+                                type="text"
+                                id="wall"
+                                name="wall"
+                                value={formData.wall}
+                                onChange={handleChange}
+                                required
+                                placeholder="1"
+                                pattern="[0-9]+"
+                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                    fieldErrors.wall ? 'border-red-300' : 'border-gray-300'
+                                }`}
+                            />
+                            {fieldErrors.wall && (
+                                <p className="text-sm text-red-600 mt-1">{fieldErrors.wall}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label htmlFor="row" className="block text-sm font-medium text-gray-700 mb-1">
+                                Row *
+                            </label>
+                            <input
+                                type="text"
+                                id="row"
+                                name="row"
+                                value={formData.row}
+                                onChange={handleChange}
+                                required
+                                placeholder="1"
+                                pattern="[0-9]+"
+                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                    fieldErrors.row ? 'border-red-300' : 'border-gray-300'
+                                }`}
+                            />
+                            {fieldErrors.row && (
+                                <p className="text-sm text-red-600 mt-1">{fieldErrors.row}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label htmlFor="column" className="block text-sm font-medium text-gray-700 mb-1">
+                                Column *
+                            </label>
+                            <input
+                                type="text"
+                                id="column"
+                                name="column"
+                                value={formData.column}
+                                onChange={handleChange}
+                                required
+                                placeholder="1"
+                                pattern="[0-9]+"
+                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                    fieldErrors.column ? 'border-red-300' : 'border-gray-300'
+                                }`}
+                            />
+                            {fieldErrors.column && (
+                                <p className="text-sm text-red-600 mt-1">{fieldErrors.column}</p>
+                            )}
+                        </div>
                     </div>
 
-                    <div>
-                        <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                            Location *
+                    {/* Location Preview */}
+                    <div className="bg-gray-50 p-3 rounded-md">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Location Preview
                         </label>
-                        <Select
-                            id="location"
-                            name="location"
-                            value={availableLocations.find(loc => formData.location === loc) ? 
-                                { value: formData.location, label: formData.location } : null}
-                            onChange={handleLocationChange}
-                            options={availableLocations.map(location => ({
-                                value: location,
-                                label: location
-                            }))}
-                            placeholder="Search or select a location..."
-                            isSearchable={true}
-                            isClearable={true}
-                            noOptionsMessage={() => "No available locations"}
-                            className="react-select-container"
-                            classNamePrefix="react-select"
-                            styles={{
-                                control: (provided, state) => ({
-                                    ...provided,
-                                    borderColor: state.isFocused ? '#3B82F6' : '#D1D5DB',
-                                    boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.5)' : 'none',
-                                    '&:hover': {
-                                        borderColor: state.isFocused ? '#3B82F6' : '#9CA3AF'
-                                    }
-                                }),
-                                placeholder: (provided) => ({
-                                    ...provided,
-                                    color: '#9CA3AF'
-                                })
-                            }}
-                        />
-                        {availableLocations.length === 0 && (
-                            <p className="text-sm text-red-600 mt-1">
-                                No available locations. All niches are taken.
-                            </p>
-                        )}
-                        {!niche && availableLocations.length < allLocations.length && (
-                            <p className="text-sm text-gray-600 mt-1">
-                                {allLocations.length - availableLocations.length} location(s) are already taken and hidden from this list.
-                            </p>
-                        )}
+                        <p className="text-sm text-gray-900">
+                            {previewLocation || 'Fill in the fields above to see preview'}
+                        </p>
                     </div>
 
                     <div>
                         <label htmlFor="niche_type" className="block text-sm font-medium text-gray-700 mb-1">
-                            Niche Type *
+                            Material *
                         </label>
                         <select
                             id="niche_type"
@@ -213,24 +263,26 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
                         </select>
                     </div>
 
-                    <div>
-                        <label htmlFor="date_of_availment" className="block text-sm font-medium text-gray-700 mb-1">
-                            Date of Availment *
-                        </label>
-                        <input
-                            type="date"
-                            id="date_of_availment"
-                            name="date_of_availment"
-                            value={formData.date_of_availment}
-                            onChange={handleChange}
-                            required
-                            max={new Date().toISOString().split('T')[0]}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                        <p className="text-sm text-gray-500 mt-1">
-                            Contract start date (expiry calculated as 50 years from this date)
-                        </p>
-                    </div>
+                    {holder && (
+                        <div>
+                            <label htmlFor="date_of_availment" className="block text-sm font-medium text-gray-700 mb-1">
+                                Date of Availment *
+                            </label>
+                            <input
+                                type="date"
+                                id="date_of_availment"
+                                name="date_of_availment"
+                                value={formData.date_of_availment}
+                                onChange={handleChange}
+                                required
+                                max={new Date().toISOString().split('T')[0]}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <p className="text-sm text-gray-500 mt-1">
+                                Contract start date (expiry calculated as 50 years from this date)
+                            </p>
+                        </div>
+                    )}
 
                     {niche && (
                         <>
@@ -242,7 +294,7 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
                                     type="text"
                                     value={niche?.date_of_expiry ? 
                                         new Date(niche.date_of_expiry).toLocaleDateString() : 
-                                        'Calculating...'}
+                                        'Will be calculated after saving'}
                                     disabled
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
                                 />
@@ -285,7 +337,7 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
                         </button>
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || Object.keys(fieldErrors).length > 0}
                             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading ? 'Saving...' : (niche ? 'Update Niche' : 'Create Niche')}

@@ -8,9 +8,11 @@ import { FaEdit, FaTrash } from 'react-icons/fa';
 
 import LoadingPage from './loading';
 import CreateNewElement from "../components/dashboard/createNewElement";
+import NicheForm from "../components/dashboard/NicheForm";
 import EditElement from "../components/dashboard/editElement";
 import AccountModal from "../components/dashboard/accountModal";
 import CustomerModal from "../components/dashboard/customerModal";
+import NicheDetailModal from "../components/dashboard/NicheDetailModal";
 import Analytics from "../components/dashboard/analytics/Analytics";
 import HoldersGrid from "../components/dashboard/holdersGrid";
 import Reports from "../components/dashboard/Reports";
@@ -29,7 +31,9 @@ export default function DashboardPage() {
     const [openCreateModal, setOpenCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showCustomerModal, setShowCustomerModal] = useState(false);
+    const [showNicheModal, setShowNicheModal] = useState(false);
     const [selectedPaymentId, setSelectedPaymentId] = useState(null);
+    const [nicheInfo, setNicheInfo] = useState({});
 
     const [tableLoading, setTableLoading] = useState(false);
 
@@ -47,6 +51,23 @@ export default function DashboardPage() {
     const [holderInfo, setHolderInfo] = useState({});
     const [expiredNichesCount, setExpiredNichesCount] = useState(0);
     
+    // Helper function to parse niche names
+    const parseNicheName = (name) => {
+        // Parse "Wall X - Row Y - Niche Z" format
+        const parts = name.split(' - ');
+        const wall = parts[0]?.replace('Wall ', '') || '';
+        const material = ''; // No material in niche names
+        const row = parts[1]?.replace('Row ', '') || '';
+        const column = parts[2]?.replace('Niche ', '') || '';
+        return { wall, material, row, column };
+    };
+    
+    function getEndpoint(tab) {
+        if (tab === 'Holders') return 'customers';
+        if (tab === 'Niches') return 'niches';
+        return tab.toLowerCase();
+    }
+    
     async function fetchItems(endpoint) {
         // Skip fetching for Analytics and Reports tabs since they handle their own data
         if (endpoint === 'Analytics' || endpoint === 'Reports') {
@@ -58,7 +79,7 @@ export default function DashboardPage() {
         setElements([]);
         console.log(endpoint, " fetching items.");
         try {
-            const apiEndpoint = endpoint === 'Holders' ? 'customers' : endpoint.toLowerCase();
+            const apiEndpoint = getEndpoint(endpoint);
             await fetch (`http://localhost:8000/api/${apiEndpoint}/list-all/`, {
                 method: 'GET',
                 headers: {
@@ -156,6 +177,15 @@ export default function DashboardPage() {
         setShowCustomerModal(true);
     }
 
+    const handleCloseNicheModal = () => {
+        setShowNicheModal(false);
+    };
+
+    const handleViewNicheDetails = (niche) => {
+        setNicheInfo(niche);
+        setShowNicheModal(true);
+    };
+
     const handleEditClick = () => {
          if (selectedElements.length === 1) {
             setElementToEdit(elements.find(e => e.id === selectedElements[0]));
@@ -169,13 +199,24 @@ export default function DashboardPage() {
 
         if (selectedElements.length === 0) return;
 
+        // Special validation for Niches tab - prevent deletion of occupied niches
+        if (selectedTab === 'Niches') {
+            const selectedNiches = elements.filter(element => selectedElements.includes(element.id));
+            const occupiedNiches = selectedNiches.filter(niche => niche.status === 'Occupied' || niche.status === 'Full');
+            
+            if (occupiedNiches.length > 0) {
+                alert(`Cannot delete occupied niches. The following niches contain deceased records:\n${occupiedNiches.map(n => n.location).join(', ')}\n\nPlease remove all deceased records before deleting these niches.`);
+                return;
+            }
+        }
+
         const endpoint = selectedTab.toLowerCase();
 
         const confirmation = window.confirm(`Are you sure you want to delete ${selectedElements.length} items? This action cannot be undone.`);
 
         if (confirmation) {
             try {
-                const apiEndpoint = selectedTab === 'Holders' ? 'customers' : endpoint.toLowerCase();
+                const apiEndpoint = getEndpoint(selectedTab);
                 const response = await fetch(`http://localhost:8000/api/${apiEndpoint}/delete/`, {
                     method: 'DELETE',
                     headers: {
@@ -250,8 +291,8 @@ export default function DashboardPage() {
                 }
             }
 
-            const apiEndpoint = selectedTab === 'Holders' ? 'customers' : endpoint.toLowerCase();
-            const entityType = selectedTab === 'Holders' ? 'customer' : endpoint.slice(0, -1).toLowerCase();
+            const apiEndpoint = getEndpoint(selectedTab);
+            const entityType = selectedTab === 'Holders' ? 'customer' : selectedTab === 'Niches' ? 'niche' : endpoint.slice(0, -1).toLowerCase();
             const response = await fetch(`http://localhost:8000/api/${apiEndpoint}/edit/?${entityType}_id=${elementToEdit.id}`, {
                 method: 'PUT',
                 headers,
@@ -337,7 +378,7 @@ export default function DashboardPage() {
                 }
             }
 
-            const apiEndpoint = selectedTab === 'Holders' ? 'customers' : endpoint.toLowerCase();
+            const apiEndpoint = getEndpoint(selectedTab);
             await fetch("http://localhost:8000/api/" + apiEndpoint + "/create-new/", {
                 method: 'POST',
                 headers,
@@ -551,6 +592,8 @@ export default function DashboardPage() {
                             )}
                         </Tab>
 
+                        <Tab onClick={() => handleTabSelect("Niches")} icon="fa-solid fa-boxes">Niches</Tab>
+
                         {/* Audit Logs*/}
                         {sessionStorage.getItem("permissions").split(",").includes("view_audit") && <Tab onClick={() => handleTabSelect("Audit")} icon="fa-solid fa-clipboard-list">Audit Logs</Tab>}
 
@@ -698,6 +741,59 @@ export default function DashboardPage() {
                                     toolbarButtons: [],
                                     rowRenderer: () => null, // Not used for reports
                                     customComponent: Reports // Use custom component instead
+                                },
+                                Niches: {
+                                    columns: [
+                                        { label: "", key: "_select" },
+                                        { label: "Niche ID", key: "id", type: 'number' },
+                                        { label: "Wall", key: "wall", type: 'text' },
+                                        { label: "Material", key: "material", type: 'text' },
+                                        { label: "Row", key: "row", type: 'text' },
+                                        { label: "Column", key: "column", type: 'text' },
+                                        { label: "Status", key: "status", type: 'text' },
+                                        { label: "Holder", key: "holderName", type: 'text' },
+                                        { label: "Actions", key: "_actions" },
+                                    ],
+                                    toolbarButtons: [
+                                        { label: 'Add Niche', icon: 'fa-solid fa-plus', bg: 'bg-blue-500', textClass: 'text-white', onClick: () => setOpenCreateModal(true) },
+                                        { label: 'Edit Selected', icon: 'fa-solid fa-pencil', onClick: handleEditClick },
+                                        { label: `(${selectedElements.length}) Remove Selected`, icon: 'fa fa-trash', bg: 'bg-red-500', textClass: 'text-white', onClick: handleRemoveSelected },
+                                    ],
+                                    rowRenderer: (row) => {
+                                        const statusColor = {
+                                            'Available': 'bg-green-100 text-green-800',
+                                            'Reserved': 'bg-blue-100 text-blue-800',
+                                            'Occupied': 'bg-yellow-100 text-yellow-800', 
+                                            'Full': 'bg-red-100 text-red-800'
+                                        }[row.status] || 'bg-gray-100 text-gray-800';
+                                        
+                                        const { wall, row: rowNum, column } = parseNicheName(row.location);
+                                        
+                                        return (
+                                            <>
+                                                <td className="p-2">{row.id ?? ''}</td>
+                                                <td className="p-2">{wall}</td>
+                                                <td className="p-2">{row.nicheType ?? ''}</td>
+                                                <td className="p-2">{rowNum}</td>
+                                                <td className="p-2">{column}</td>
+                                                <td className="p-2">
+                                                    <span className={`px-2 py-1 rounded text-xs font-medium ${statusColor}`}>
+                                                        {row.status}
+                                                    </span>
+                                                </td>
+                                                <td className="p-2">{row.holderName ?? 'Unassigned'}</td>
+                                                <td className="p-2">
+                                                    <button
+                                                        onClick={() => handleViewNicheDetails(row)}
+                                                        className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                                                    >
+                                                        <i className="fa-solid fa-eye mr-1"></i>
+                                                        View Details
+                                                    </button>
+                                                </td>
+                                            </>
+                                        );
+                                    }
                                 }
                                 // Add other tabs here
                             }
@@ -899,13 +995,47 @@ export default function DashboardPage() {
             </div>
 
             { openCreateModal && (() => {
-                let fieldsToPass = fieldsByTab[selectedTab] || [];
-                return <CreateNewElement tab={selectedTab} onCreate={handleCreate} fields={fieldsToPass} />
+                if (selectedTab === 'Niches') {
+                    return (
+                        <NicheForm
+                            niche={null}
+                            holder={null}
+                            onSave={(savedNiche) => {
+                                setOpenCreateModal(false);
+                                fetchItems(selectedTab); // Refresh the niches list
+                            }}
+                            onCancel={() => {
+                                setOpenCreateModal(false);
+                            }}
+                        />
+                    );
+                } else {
+                    let fieldsToPass = fieldsByTab[selectedTab] || [];
+                    return <CreateNewElement tab={selectedTab} onCreate={handleCreate} fields={fieldsToPass} />;
+                }
             })() }
             { /* EditElement modal can be added here similarly when needed */ }
             { showEditModal && (() => {
-                let editFields = fieldsByTab[selectedTab] || [];
-                return <EditElement tab={selectedTab} elementData={elementToEdit} fields={editFields} onEdit={handleEdit} />
+                if (selectedTab === 'Niches') {
+                    return (
+                        <NicheForm
+                            niche={elementToEdit}
+                            holder={elementToEdit?.holder_details}
+                            onSave={(savedNiche) => {
+                                setShowEditModal(false);
+                                setElementToEdit(null);
+                                fetchItems(selectedTab); // Refresh the niches list
+                            }}
+                            onCancel={() => {
+                                setShowEditModal(false);
+                                setElementToEdit(null);
+                            }}
+                        />
+                    );
+                } else {
+                    let editFields = fieldsByTab[selectedTab] || [];
+                    return <EditElement tab={selectedTab} elementData={elementToEdit} fields={editFields} onEdit={handleEdit} />;
+                }
             })()}
 
             <div ref={accountModalRef}>
@@ -913,6 +1043,7 @@ export default function DashboardPage() {
             </div>
 
             {showCustomerModal && <CustomerModal onClose={handleCloseCustomerModal} info={holderInfo} />}
+            {showNicheModal && <NicheDetailModal niche={nicheInfo} onClose={handleCloseNicheModal} onSave={() => { fetchItems(selectedTab); handleCloseNicheModal(); }} />}
             
         </div>
     )
