@@ -14,6 +14,7 @@ class NicheSerializer(serializers.ModelSerializer):
     deceased_records = DeceasedSerializer(many=True, read_only=True)
     deceased_count = serializers.ReadOnlyField(source='get_deceased_count')
     holder_name = serializers.ReadOnlyField(source='holder.name')
+    holder_details = serializers.SerializerMethodField()
     days_until_expiry = serializers.SerializerMethodField()
     is_expiring_soon = serializers.SerializerMethodField()
     
@@ -21,6 +22,13 @@ class NicheSerializer(serializers.ModelSerializer):
         model = Niche
         fields = '__all__'
         read_only_fields = ('status', 'date_of_expiry', 'created_at', 'updated_at')  # Keep expiry read-only since it's auto-calculated
+    
+    def get_holder_details(self, obj):
+        """Get full holder details for the niche detail modal"""
+        if obj.holder:
+            from customers.serializers import CustomerSerializer
+            return CustomerSerializer(obj.holder).data
+        return None
     
     def get_days_until_expiry(self, obj):
         """Get number of days until expiry"""
