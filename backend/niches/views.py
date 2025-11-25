@@ -31,6 +31,14 @@ def list_niches(request):
         return Response({'error': 'You do not have permission to view niches.'}, status=status.HTTP_403_FORBIDDEN)
 
     niches = Niche.objects.select_related('holder').prefetch_related('deceased_records').all()
+    
+    # Update status for all niches to ensure expired niches are marked correctly
+    for niche in niches:
+        niche.update_status()
+    
+    # Bulk update to save the status changes efficiently
+    Niche.objects.bulk_update(niches, ['status'])
+    
     serializer = NicheListSerializer(niches, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -64,6 +72,15 @@ def list_holder_niches(request):
         return Response({'error': 'Holder not found'}, status=status.HTTP_404_NOT_FOUND)
 
     niches = Niche.objects.filter(holder=holder).prefetch_related('deceased_records')
+    
+    # Update status for all niches to ensure expired niches are marked correctly
+    for niche in niches:
+        niche.update_status()
+    
+    # Bulk update to save the status changes efficiently if any changes were made
+    if niches:
+        Niche.objects.bulk_update(niches, ['status'])
+    
     serializer = NicheSerializer(niches, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
