@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { IoClose } from "react-icons/io5";
 import { FaEdit, FaTrash } from 'react-icons/fa';
+import apiClient from '../../axios/api';
 
 export default function PaymentDetailModal({ paymentId, onClose, onPaymentAdded }) {
     const [loading, setLoading] = useState(true);
@@ -19,20 +20,14 @@ export default function PaymentDetailModal({ paymentId, onClose, onPaymentAdded 
     const fetchPaymentDetails = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:8000/api/payments/${paymentId}/details/`, {
-                method: 'GET',
+            const response = await apiClient.get(`/payments/${paymentId}/details/`, {
                 headers: {
                     'Session-Token': sessionStorage.getItem('token'),
-                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                },
-                credentials: 'include',
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`
+                }
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch payment details');
-            }
-
-            const data = await response.json();
+            const data = response.data;
             setPaymentInfo(data.payment);
             setPaymentDetails(data.details);
             setCanAddPayment(data.can_add_payment);
@@ -54,29 +49,12 @@ export default function PaymentDetailModal({ paymentId, onClose, onPaymentAdded 
         }
 
         try {
-            const response = await fetch(`http://localhost:8000/api/payments/${paymentId}/add-payment/`, {
-                method: 'POST',
+            const response = await apiClient.post(`/payments/${paymentId}/add-payment/`, newPayment, {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Session-Token': sessionStorage.getItem('token'),
-                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                },
-                body: JSON.stringify(newPayment),
-                credentials: 'include',
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                if (data.type === 'payment_completed') {
-                    setError('This payment is already completed. No additional payments can be added.');
-                } else if (data.type === 'amount_exceeds_balance') {
-                    setError(data.error);
-                } else {
-                    setError(data.error || 'Failed to add payment');
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`
                 }
-                return;
-            }
+            });
 
             // Success - refresh the data
             setNewPayment({
@@ -94,7 +72,18 @@ export default function PaymentDetailModal({ paymentId, onClose, onPaymentAdded 
 
         } catch (error) {
             console.error('Error adding payment:', error);
-            setError('Failed to add payment');
+            if (error.response?.data) {
+                const data = error.response.data;
+                if (data.type === 'payment_completed') {
+                    setError('This payment is already completed. No additional payments can be added.');
+                } else if (data.type === 'amount_exceeds_balance') {
+                    setError(data.error);
+                } else {
+                    setError(data.error || 'Failed to add payment');
+                }
+            } else {
+                setError('Failed to add payment');
+            }
         }
     };
 
@@ -117,38 +106,33 @@ export default function PaymentDetailModal({ paymentId, onClose, onPaymentAdded 
         }
 
         try {
-            const response = await fetch(`http://localhost:8000/api/payments/detail/${editingPayment.id}/edit/`, {
-                method: 'PUT',
+            const response = await apiClient.put(`/payments/detail/${editingPayment.id}/edit/`, {
+                amount: editingPayment.amount,
+                payment_date: editingPayment.payment_date,
+                notes: editingPayment.notes
+            }, {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Session-Token': sessionStorage.getItem('token'),
-                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                },
-                body: JSON.stringify({
-                    amount: editingPayment.amount,
-                    payment_date: editingPayment.payment_date,
-                    notes: editingPayment.notes
-                }),
-                credentials: 'include',
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`
+                }
             });
 
-            if (response.ok) {
-                // Update local state instead of refetching
-                setPaymentDetails(prev => prev.map(detail => 
-                    detail.id === editingPayment.id 
-                        ? { ...detail, ...editingPayment }
-                        : detail
-                ));
-                setEditingPayment(null);
-                // Refresh payment info to get updated totals
-                await fetchPaymentDetails();
-            } else {
-                const data = await response.json();
-                setError(data.error || 'Failed to update payment');
-            }
+            // Update local state instead of refetching
+            setPaymentDetails(prev => prev.map(detail => 
+                detail.id === editingPayment.id 
+                    ? { ...detail, ...editingPayment }
+                    : detail
+            ));
+            setEditingPayment(null);
+            // Refresh payment info to get updated totals
+            await fetchPaymentDetails();
         } catch (error) {
             console.error('Error updating payment:', error);
-            setError('Failed to update payment');
+            if (error.response?.data) {
+                setError(error.response.data.error || 'Failed to update payment');
+            } else {
+                setError('Failed to update payment');
+            }
         }
     };
 
@@ -158,23 +142,17 @@ export default function PaymentDetailModal({ paymentId, onClose, onPaymentAdded 
         if (!confirmation) return;
 
         try {
-            const response = await fetch(`http://localhost:8000/api/payments/detail/${detailId}/delete/`, {
-                method: 'DELETE',
+            const response = await apiClient.delete(`/payments/detail/${detailId}/delete/`, {
                 headers: {
                     'Session-Token': sessionStorage.getItem('token'),
-                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                },
-                credentials: 'include',
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`
+                }
             });
 
-            if (response.ok) {
-                // Remove from local state instead of refetching
-                setPaymentDetails(prev => prev.filter(detail => detail.id !== detailId));
-                // Refresh payment info to get updated totals
-                await fetchPaymentDetails();
-            } else {
-                setError('Failed to delete payment detail');
-            }
+            // Remove from local state instead of refetching
+            setPaymentDetails(prev => prev.filter(detail => detail.id !== detailId));
+            // Refresh payment info to get updated totals
+            await fetchPaymentDetails();
         } catch (error) {
             console.error('Error deleting payment detail:', error);
             setError('Failed to delete payment detail');
