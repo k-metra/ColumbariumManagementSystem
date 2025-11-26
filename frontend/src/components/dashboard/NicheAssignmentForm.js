@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
+import apiClient from '../../axios/api';
 
 export default function NicheAssignmentForm({ holder, onSave, onCancel }) {
     const [formData, setFormData] = useState({
@@ -16,32 +17,25 @@ export default function NicheAssignmentForm({ holder, onSave, onCancel }) {
 
     const fetchAvailableNiches = async () => {
         try {
-            const response = await fetch('http://localhost:8000/api/niches/list-all/', {
-                method: 'GET',
+            const response = await apiClient.get('/niches/list-all/', {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'Session-Token': sessionStorage.getItem('token')
                 }
             });
 
-            if (response.ok) {
-                const niches = await response.json();
+            const niches = response.data;
                 
-                // Filter niches: only show Available ones (exclude expired niches)
-                const availableOptions = niches
-                    .filter(niche => niche.status === 'Available')
-                    .map(niche => ({
-                        value: niche.id,
-                        label: `${niche.location} (${niche.niche_type})`,
-                        niche: niche
-                    }));
-                
-                setAvailableNiches(availableOptions);
-            } else {
-                console.error('Failed to fetch niches');
-                setAvailableNiches([]);
-            }
+            // Filter niches: only show Available ones (exclude expired niches)
+            const availableOptions = niches
+                .filter(niche => niche.status === 'Available')
+                .map(niche => ({
+                    value: niche.id,
+                    label: `${niche.location} (${niche.niche_type})`,
+                    niche: niche
+                }));
+            
+            setAvailableNiches(availableOptions);
         } catch (error) {
             console.error('Error fetching niches:', error);
             setAvailableNiches([]);
@@ -75,29 +69,24 @@ export default function NicheAssignmentForm({ holder, onSave, onCancel }) {
 
         try {
             // Assign the selected niche to the holder
-            const response = await fetch(`http://localhost:8000/api/niches/edit/?niche_id=${formData.selectedNiche.value}`, {
-                method: 'PUT',
+            const response = await apiClient.put(`/niches/edit/?niche_id=${formData.selectedNiche.value}`, {
+                holder: holder.id,
+                date_of_availment: formData.date_of_availment
+            }, {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'Session-Token': sessionStorage.getItem('token')
-                },
-                body: JSON.stringify({
-                    holder: holder.id,
-                    date_of_availment: formData.date_of_availment
-                })
+                }
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                onSave(result);
-            } else {
-                const errorData = await response.json();
-                setError(errorData.error || 'Failed to assign niche');
-            }
+            onSave(response.data);
         } catch (error) {
             console.error('Error assigning niche:', error);
-            setError('Network error occurred');
+            if (error.response?.data) {
+                setError(error.response.data.error || 'Failed to assign niche');
+            } else {
+                setError('Network error occurred');
+            }
         } finally {
             setLoading(false);
         }
