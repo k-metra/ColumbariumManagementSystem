@@ -1,19 +1,22 @@
 import Icon from '../icon';
+import apiClient from '../../axios/api';
 
 export default function AccountModal({ username, role, isOpen }) {
     const handleLogout = async () => {
 
-        await fetch('http://localhost:8000/api/logout-api/', {
-            method: 'DELETE',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-                "Authorization": `Session ${sessionStorage.getItem("session_token")}`
-            }
-        }).then(() => {
+        const token = sessionStorage.getItem("token");
+
+        if (!token) token = "No Token"
+
+        try {
+            const response = await apiClient.delete('/users/logout-api/', { headers: { "Authorization": `Session ${token}` }})
+        } catch (error) {
+            console.log (error);
+        } finally {
             sessionStorage.clear();
-            window.location.href = '/login';
-        })
+            window.location.href = "/login";
+        }
+    
     }
     return (
         <>
