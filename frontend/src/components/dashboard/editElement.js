@@ -1,5 +1,13 @@
 import { useState } from 'react';
 
+// Get the correct media URL based on environment
+const getMediaUrl = (filePath) => {
+    const baseUrl = process.env.REACT_APP_ENVIRONMENT === 'local' 
+        ? 'http://localhost:8000' 
+        : 'https://mcj-parish.hopto.org';
+    return `${baseUrl}/media/${filePath}`;
+};
+
 export default function EditElement({ tab, elementData, fields, onEdit }) {
     const [formData, setFormData] = useState({ ...elementData });
 
@@ -9,7 +17,12 @@ export default function EditElement({ tab, elementData, fields, onEdit }) {
 
     const handleFileChange = (name, file) => {
         console.log('handleFileChange', name, file);
-        setFormData((prev) => ({ ...prev, [name]: file }));
+        // Only set the file if it's actually a File object, otherwise set to null
+        if (file && file instanceof File) {
+            setFormData((prev) => ({ ...prev, [name]: file }));
+        } else {
+            setFormData((prev) => ({ ...prev, [name]: null }));
+        }
     }
 
     const renderField = (f) => {
@@ -51,7 +64,7 @@ export default function EditElement({ tab, elementData, fields, onEdit }) {
                         />
                         {elementData[f.name] && (
                             <div className="text-sm text-gray-600">
-                                Current: <a href={`http://localhost:8000/media/${elementData[f.name]}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                                Current: <a href={getMediaUrl(elementData[f.name])} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
                                     View current file
                                 </a>
                                 <div className="text-xs text-gray-500 mt-1">
@@ -77,6 +90,8 @@ export default function EditElement({ tab, elementData, fields, onEdit }) {
                     
                     // Check if we have any new file uploads
                     const hasNewFiles = Object.values(formData).some(value => value instanceof File);
+                    console.log('EditElement: hasNewFiles:', hasNewFiles);
+                    console.log('EditElement: formData entries:', Object.entries(formData));
                     
                     if (hasNewFiles) {
                         // Create FormData for file uploads
@@ -85,22 +100,34 @@ export default function EditElement({ tab, elementData, fields, onEdit }) {
                             const value = formData[key];
                             const field = fields.find(f => f.name === key);
                             
+                            console.log(`EditElement: Processing key: ${key}, value type: ${typeof value}, isFile: ${value instanceof File}, field type: ${field?.type}`);
+                            
                             if (value !== null && value !== undefined) {
                                 if (value instanceof File) {
                                     // New file upload
+                                    console.log(`EditElement: Adding file ${key}:`, value.name);
                                     form.append(key, value);
                                 } else if (field?.type === 'file' && typeof value === 'string' && value.trim() !== '') {
                                     // Existing file - don't include in FormData to keep existing file
                                     // The backend will keep the existing file if no new file is provided
-                                } else if (field?.type !== 'file' && value !== '') {
-                                    // Regular form field with non-empty value
-                                    form.append(key, value);
-                                } else if (field?.type !== 'file') {
-                                    // Regular form field (including empty values for non-file fields)
+                                    console.log(`EditElement: Skipping existing file ${key}:`, value);
+                                } else if (field?.type === 'file') {
+                                    // Empty or null file field - skip to avoid validation error
+                                    // This prevents sending empty strings for file fields
+                                    console.log(`EditElement: Skipping empty file field ${key}:`, value);
+                                } else {
+                                    // Regular form field
+                                    console.log(`EditElement: Adding regular field ${key}:`, value);
                                     form.append(key, value);
                                 }
                             }
                         });
+                        
+                        console.log('EditElement: Final FormData entries:');
+                        for (let [key, value] of form.entries()) {
+                            console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value);
+                        }
+                        
                         console.log('Submitting FormData for edit with new files');
                         onEdit(form);
                     } else {
