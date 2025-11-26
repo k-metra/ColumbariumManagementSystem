@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
+import apiClient from '../../axios/api';
+
 import { IoMdEyeOff, IoMdEye } from "react-icons/io";
 
 export default function LoginForm() {
@@ -21,16 +23,10 @@ export default function LoginForm() {
     async function onSubmit(e) {
         e.preventDefault();
 
-        await fetch('http://localhost:8000/api/users/login-api/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(credentials),
-            credentials: 'include',
-        })
-        .then(response => response.json())
+        apiClient.post('/users/login-api/', credentials)
+        .then(response => response.data)
         .then(data => {
+            console.log(data);
             if (data.error) {
                 setError(data.error);
                 return;
@@ -46,14 +42,15 @@ export default function LoginForm() {
                 sessionStorage.setItem('role', data.user.role);
                 sessionStorage.setItem('permissions', data.user.permissions);
                 navigate('/dashboard');
+
             } else {
                 setError(data.error || "Login failed");
             }
-        })
-        .catch(err => {
+
+        }).catch(err => {
             console.error(err);
             setError("An error occurred");
-        });
+        })
     }
 
     return (
