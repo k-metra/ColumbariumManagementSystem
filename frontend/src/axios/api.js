@@ -5,7 +5,6 @@ const localClient = axios.create({
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Session ${sessionStorage.getItem("session_token")}`
     }
 })
 
@@ -15,7 +14,6 @@ const productionClient = axios.create({
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Session ${sessionStorage.getItem("session_token")}`
     }
 })
 
