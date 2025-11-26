@@ -97,6 +97,18 @@ def create_customer(request):
 @api_view(['PUT'])
 @csrf_exempt
 def update_customer(request):
+    print(f"DEBUG: update_customer called with method: {request.method}")
+    print(f"DEBUG: Headers: {dict(request.headers)}")
+    print(f"DEBUG: Content-Type: {request.content_type}")
+    print(f"DEBUG: Data keys: {list(request.data.keys())}")
+    
+    # Debug file fields
+    for key, value in request.data.items():
+        if hasattr(value, 'read'):  # File-like object
+            print(f"DEBUG: File field {key}: {getattr(value, 'name', 'unknown')}, size: {getattr(value, 'size', 'unknown')}")
+        else:
+            print(f"DEBUG: Regular field {key}: {value}")
+    
     authorization_header = request.headers.get("Authorization")
     if not authorization_header:
         return Response({"error":"Authorization header is missing."}, status=status.HTTP_401_UNAUTHORIZED)
