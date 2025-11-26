@@ -2,6 +2,7 @@ import { IoClose } from "react-icons/io5";
 import { useState, useEffect } from 'react';
 import Select from 'react-select';
 import CustomerModal from './customerModal';
+import apiClient from '../../axios/api';
 
 export default function NicheDetailModal({ niche, onClose, onSave }) {
     const [loading, setLoading] = useState(false);
@@ -22,50 +23,44 @@ export default function NicheDetailModal({ niche, onClose, onSave }) {
     const fetchNicheDetails = async () => {
         try {
             // Fetch the specific niche with full details including holder_details
-            const response = await fetch(`http://localhost:8000/api/niches/list-all/`, {
+            const response = await apiClient.get('/niches/list-all/', {
                 headers: {
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'Session-Token': sessionStorage.getItem('token')
                 }
             });
             
-            if (response.ok) {
-                const niches = await response.json();
-                const currentNiche = niches.find(n => n.id === niche.id);
-                
-                if (currentNiche) {
-                    // If we have a holder but no holder_details, fetch detailed niche data
-                    if (currentNiche.holder && !currentNiche.holder_details) {
-                        // Fetch using the full NicheSerializer endpoint
-                        const detailResponse = await fetch(`http://localhost:8000/api/niches/list-holder/?holder_id=${currentNiche.holder}`, {
-                            headers: {
-                                'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                                'Session-Token': sessionStorage.getItem('token')
-                            }
-                        });
-                        
-                        if (detailResponse.ok) {
-                            const holderNiches = await detailResponse.json();
-                            const detailedNiche = holderNiches.find(n => n.id === niche.id);
-                            if (detailedNiche) {
-                                setNicheData(detailedNiche);
-                            } else {
-                                setNicheData(currentNiche);
-                            }
-                        } else {
-                            setNicheData(currentNiche);
+            const niches = response.data;
+            const currentNiche = niches.find(n => n.id === niche.id);
+            
+            if (currentNiche) {
+                // If we have a holder but no holder_details, fetch detailed niche data
+                if (currentNiche.holder && !currentNiche.holder_details) {
+                    // Fetch using the full NicheSerializer endpoint
+                    const detailResponse = await apiClient.get(`/niches/list-holder/?holder_id=${currentNiche.holder}`, {
+                        headers: {
+                            'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                            'Session-Token': sessionStorage.getItem('token')
                         }
+                    });
+                    
+                    const holderNiches = detailResponse.data;
+                    const detailedNiche = holderNiches.find(n => n.id === niche.id);
+                    if (detailedNiche) {
+                        setNicheData(detailedNiche);
                     } else {
                         setNicheData(currentNiche);
                     }
-                    
-                    // Set selected holder if niche has one
-                    if (currentNiche?.holder) {
-                        setSelectedHolder({
-                            value: currentNiche.holder,
-                            label: currentNiche.holder_name
-                        });
-                    }
+                } else {
+                    setNicheData(currentNiche);
+                }
+                
+                // Set selected holder if niche has one
+                if (currentNiche?.holder) {
+                    setSelectedHolder({
+                        value: currentNiche.holder,
+                        label: currentNiche.holder_name
+                    });
                 }
             }
         } catch (error) {
@@ -76,25 +71,23 @@ export default function NicheDetailModal({ niche, onClose, onSave }) {
 
     const fetchAvailableHolders = async () => {
         try {
-            const response = await fetch(`http://localhost:8000/api/customers/list-all/`, {
+            const response = await apiClient.get('/customers/list-all/', {
                 headers: {
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'Session-Token': sessionStorage.getItem('token')
                 }
             });
             
-            if (response.ok) {
-                const customers = await response.json();
-                // Filter holders who have less than 4 niches
-                const availableCustomers = customers
-                    .filter(customer => (customer.niche_count || 0) < 4)
-                    .map(customer => ({
-                        value: customer.id,
-                        label: `${customer.name} (${customer.niche_count || 0}/4 niches)`
-                    }));
+            const customers = response.data;
+            // Filter holders who have less than 4 niches
+            const availableCustomers = customers
+                .filter(customer => (customer.niche_count || 0) < 4)
+                .map(customer => ({
+                    value: customer.id,
+                    label: `${customer.name} (${customer.niche_count || 0}/4 niches)`
+                }));
                 
-                setAvailableHolders(availableCustomers);
-            }
+            setAvailableHolders(availableCustomers);
         } catch (error) {
             console.error('Error fetching holders:', error);
             setError('Failed to fetch available holders');
@@ -116,29 +109,25 @@ export default function NicheDetailModal({ niche, onClose, onSave }) {
         setError('');
 
         try {
-            const response = await fetch(`http://localhost:8000/api/niches/edit/?niche_id=${niche.id}`, {
-                method: 'PUT',
+            const response = await apiClient.put(`/niches/edit/?niche_id=${niche.id}`, {
+                holder: selectedHolder.value,
+                date_of_availment: availmentDate
+            }, {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'Session-Token': sessionStorage.getItem('token')
-                },
-                body: JSON.stringify({
-                    holder: selectedHolder.value,
-                    date_of_availment: availmentDate
-                })
+                }
             });
 
-            if (response.ok) {
-                fetchNicheDetails(); // Refresh niche data
-                onSave?.(); // Callback to refresh parent data
-            } else {
-                const errorData = await response.json();
-                setError(errorData.error || 'Failed to assign holder');
-            }
+            fetchNicheDetails(); // Refresh niche data
+            onSave?.(); // Callback to refresh parent data
         } catch (error) {
             console.error('Error assigning holder:', error);
-            setError('Network error occurred');
+            if (error.response?.data) {
+                setError(error.response.data.error || 'Failed to assign holder');
+            } else {
+                setError('Network error occurred');
+            }
         } finally {
             setLoading(false);
         }
@@ -153,29 +142,25 @@ export default function NicheDetailModal({ niche, onClose, onSave }) {
         setError('');
 
         try {
-            const response = await fetch(`http://localhost:8000/api/niches/edit/?niche_id=${niche.id}`, {
-                method: 'PUT',
+            const response = await apiClient.put(`/niches/edit/?niche_id=${niche.id}`, {
+                holder: null
+            }, {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'Session-Token': sessionStorage.getItem('token')
-                },
-                body: JSON.stringify({
-                    holder: null
-                })
+                }
             });
 
-            if (response.ok) {
-                setSelectedHolder(null);
-                fetchNicheDetails(); // Refresh niche data
-                onSave?.(); // Callback to refresh parent data
-            } else {
-                const errorData = await response.json();
-                setError(errorData.error || 'Failed to unassign holder');
-            }
+            setSelectedHolder(null);
+            fetchNicheDetails(); // Refresh niche data
+            onSave?.(); // Callback to refresh parent data
         } catch (error) {
             console.error('Error unassigning holder:', error);
-            setError('Network error occurred');
+            if (error.response?.data) {
+                setError(error.response.data.error || 'Failed to unassign holder');
+            } else {
+                setError('Network error occurred');
+            }
         } finally {
             setLoading(false);
         }
