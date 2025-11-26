@@ -4,6 +4,7 @@ import './App.css';
 import { Navigate, useNavigate, Routes, Route} from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext';
 import { useEffect, Suspense } from 'react';
+import apiClient from './axios/api';
 
 /* Pages */
 import LoginPage from './pages/login';
@@ -52,26 +53,20 @@ function AppContent() {
   const navigate = useNavigate();
   useEffect(() => {
     async function validateToken(token) {
-      await fetch('http://localhost:8000/api/verify-token/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Session-Token': token,
-        }
-        
-      }).then(response => {
-        if (response.ok) {
-          setAuthenticated(true);
-          console.log("Token valid");
 
-          console.log("Authenticated2: ", authenticated);
-        } else {
-          console.log(response.json());
-          setAuthenticated(false);
-          sessionStorage.removeItem('token');
-          sessionStorage.removeItem('username');
-        }
-      })
+      const response = await apiClient.get('/verify-token/', { headers: { "Session-Token": token }})
+
+      if (response.ok) {
+        setAuthenticated(true);
+        console.log("Token valid");
+
+      } else {
+        console.log(response.data);
+        setAuthenticated(false);
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("username");
+      }
+
     }
 
     const token = sessionStorage.getItem('token');
