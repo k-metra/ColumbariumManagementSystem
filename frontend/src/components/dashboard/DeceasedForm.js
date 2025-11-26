@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import apiClient from '../../axios/api';
 
 export default function DeceasedForm({ deceased, niche, onSave, onCancel }) {
     const [formData, setFormData] = useState({
@@ -26,15 +27,14 @@ export default function DeceasedForm({ deceased, niche, onSave, onCancel }) {
 
     const fetchAvailableSlots = async () => {
         try {
-            const response = await fetch(`http://localhost:8000/api/niches/list-holder/?holder_id=${niche.holder}`, {
+            const response = await apiClient.get(`/niches/list-holder/?holder_id=${niche.holder}`, {
                 headers: {
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'Session-Token': sessionStorage.getItem('token')
                 }
             });
             
-            if (response.ok) {
-                const niches = await response.json();
+            const niches = response.data;
                 const currentNiche = niches.find(n => n.id === niche.id);
                 
                 if (currentNiche) {
@@ -55,10 +55,6 @@ export default function DeceasedForm({ deceased, niche, onSave, onCancel }) {
                 } else {
                     setAvailableSlots(allSlots);
                 }
-            } else {
-                console.error('Failed to fetch niche data');
-                setAvailableSlots(allSlots);
-            }
         } catch (error) {
             console.error('Error fetching available slots:', error);
             setAvailableSlots(allSlots);
@@ -94,28 +90,24 @@ export default function DeceasedForm({ deceased, niche, onSave, onCancel }) {
                 formDataToSend.append('death_certificate', deathCertificate);
             }
 
-            const url = deceased 
-                ? `http://localhost:8000/api/niches/deceased/edit/?deceased_id=${deceased.id}`
-                : 'http://localhost:8000/api/niches/deceased/create-new/';
+            const endpoint = deceased 
+                ? `/niches/deceased/edit/?deceased_id=${deceased.id}`
+                : '/niches/deceased/create-new/';
             
-            const method = deceased ? 'PUT' : 'POST';
-
-            const response = await fetch(url, {
-                method,
+            const config = {
                 headers: {
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                    'Session-Token': sessionStorage.getItem('token')
-                },
-                body: formDataToSend
-            });
+                    'Session-Token': sessionStorage.getItem('token'),
+                    'Content-Type': undefined // Let axios set multipart/form-data with boundary
+                }
+            };
 
-            if (response.ok) {
-                const result = await response.json();
-                onSave(result);
-            } else {
-                const errorData = await response.json();
-                setError(errorData.error || 'Failed to save deceased record');
-            }
+            const response = deceased 
+                ? await apiClient.put(endpoint, formDataToSend, config)
+                : await apiClient.post(endpoint, formDataToSend, config);
+
+            const result = response.data;
+            onSave(result);
         } catch (error) {
             console.error('Error saving deceased:', error);
             setError('Network error occurred');
