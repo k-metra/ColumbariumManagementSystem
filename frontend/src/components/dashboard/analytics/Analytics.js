@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import KPICard from './KPICard';
 import OccupancyChart from './OccupancyChart';
+import NicheStatusChart from './NicheStatusChart';
 import LoadingPage from '../../../pages/loading';
+import apiClient from '../../../axios/api';
 
 export default function Analytics() {
     const [loading, setLoading] = useState(true);
     const [analyticsData, setAnalyticsData] = useState(null);
     const [error, setError] = useState('');
+    const [activeTab, setActiveTab] = useState('holders');
 
     const fetchAnalyticsData = async () => {
         setLoading(true);
@@ -15,27 +18,16 @@ export default function Analytics() {
         console.log('Fetching analytics data...');
         
         try {
-            const response = await fetch('http://localhost:8000/api/analytics/data/', {
-                method: 'GET',
+            const response = await apiClient.get('/analytics/data/', {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Session-Token': sessionStorage.getItem('token'),
                     'Authorization': `Session ${sessionStorage.getItem('token')}`
-                },
-                credentials: 'include',
+                }
             });
 
-            console.log('Analytics response status:', response.status);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Analytics API error:', errorText);
-                throw new Error(`Failed to fetch analytics data: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log('Analytics data received:', data);
-            setAnalyticsData(data);
+            console.log('Analytics response status: 200');
+            console.log('Analytics data received:', response.data);
+            setAnalyticsData(response.data);
         } catch (error) {
             console.error('Error fetching analytics:', error);
             setError(`Failed to load analytics data: ${error.message}`);
@@ -80,32 +72,90 @@ export default function Analytics() {
 
             {analyticsData ? (
                 <>
-                    {/* Main Content - Holder Statistics */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2">
-                            <OccupancyChart data={analyticsData.holder_status || {with_deceased: 0, without_deceased: 0, total: 0, deceased_rate: 0}} />
-                        </div>
-                        <div className="space-y-4">
-                            <KPICard
-                                title="Total Holders"
-                                value={analyticsData.kpi?.total_customers || 0}
-                                icon="fa-solid fa-users"
-                                color="blue"
-                            />
-                            <KPICard
-                                title="Occupied Niches"
-                                value={analyticsData.kpi?.occupied_niches || 0}
-                                icon="fa-solid fa-building"
-                                color="purple"
-                            />
-                            <KPICard
-                                title="Total Deceased"
-                                value={analyticsData.kpi?.total_deceased || 0}
-                                icon="fa-solid fa-heart"
-                                color="red"
-                            />
-                        </div>
+                    {/* Tab Navigation */}
+                    <div className="border-b border-gray-200">
+                        <nav className="flex space-x-8">
+                            <button
+                                onClick={() => setActiveTab('holders')}
+                                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                                    activeTab === 'holders'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
+                            >
+                                <i className="fa-solid fa-users mr-2"></i>
+                                Holder Statistics
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('niches')}
+                                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                                    activeTab === 'niches'
+                                        ? 'border-blue-500 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
+                            >
+                                <i className="fa-solid fa-building mr-2"></i>
+                                Niche Status
+                            </button>
+                        </nav>
                     </div>
+
+                    {/* Tab Content */}
+                    {activeTab === 'holders' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2">
+                                <OccupancyChart data={analyticsData.holder_status || {with_deceased: 0, without_deceased: 0, total: 0, deceased_rate: 0}} />
+                            </div>
+                            <div className="space-y-4">
+                                <KPICard
+                                    title="Total Holders"
+                                    value={analyticsData.kpi?.total_customers || 0}
+                                    icon="fa-solid fa-users"
+                                    color="blue"
+                                />
+                                <KPICard
+                                    title="With Deceased"
+                                    value={analyticsData.holder_status?.with_deceased || 0}
+                                    icon="fa-solid fa-heart"
+                                    color="red"
+                                />
+                                <KPICard
+                                    title="Niche Only"
+                                    value={analyticsData.holder_status?.without_deceased || 0}
+                                    icon="fa-solid fa-building"
+                                    color="green"
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'niches' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2">
+                                <NicheStatusChart data={analyticsData.niche_status || {available: 0, occupied: 0, reserved: 0, expired: 0, full: 0}} />
+                            </div>
+                            <div className="space-y-4">
+                                <KPICard
+                                    title="Total Niches"
+                                    value={analyticsData.kpi?.total_niches || 0}
+                                    icon="fa-solid fa-building"
+                                    color="blue"
+                                />
+                                <KPICard
+                                    title="Available"
+                                    value={analyticsData.niche_status?.available || 0}
+                                    icon="fa-solid fa-circle-check"
+                                    color="green"
+                                />
+                                <KPICard
+                                    title="Occupied"
+                                    value={analyticsData.niche_status?.occupied || 0}
+                                    icon="fa-solid fa-users"
+                                    color="blue"
+                                />
+                            </div>
+                        </div>
+                    )}
                 </>
             ) : (
                 <div className="text-center py-8">
