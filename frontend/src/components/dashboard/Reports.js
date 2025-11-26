@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import apiClient from '../../axios/api';
 
 export default function Reports({ onViewDetails }) {
     const [expiringSoon, setExpiringSoon] = useState([]);
@@ -15,57 +16,20 @@ export default function Reports({ onViewDetails }) {
         try {
             setLoading(true);
             const token = sessionStorage.getItem("token");
+            const headers = {
+                'Session-Token': token,
+                'Authorization': `Session ${token}`
+            };
             
             const [expiringSoonRes, recentlyAvailedRes, expiredRes] = await Promise.all([
-                fetch(`http://localhost:8000/api/customers/expiring-soon/`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Session-Token': token,
-                        'Authorization': `Session ${token}`
-                    },
-                    credentials: 'include',
-                }),
-                fetch(`http://localhost:8000/api/customers/recently-availed/`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Session-Token': token,
-                        'Authorization': `Session ${token}`
-                    },
-                    credentials: 'include',
-                }),
-                fetch(`http://localhost:8000/api/customers/expired-niches/`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Session-Token': token,
-                        'Authorization': `Session ${token}`
-                    },
-                    credentials: 'include',
-                })
+                apiClient.get('/customers/expiring-soon/', { headers }),
+                apiClient.get('/customers/recently-availed/', { headers }),
+                apiClient.get('/customers/expired-niches/', { headers })
             ]);
 
-            if (expiringSoonRes.ok) {
-                const expiringSoonData = await expiringSoonRes.json();
-                setExpiringSoon(expiringSoonData);
-            } else {
-                console.error('Failed to fetch expiring soon data:', expiringSoonRes.status, expiringSoonRes.statusText);
-            }
-
-            if (recentlyAvailedRes.ok) {
-                const recentlyAvailedData = await recentlyAvailedRes.json();
-                setRecentlyAvailed(recentlyAvailedData);
-            } else {
-                console.error('Failed to fetch recently availed data:', recentlyAvailedRes.status, recentlyAvailedRes.statusText);
-            }
-
-            if (expiredRes.ok) {
-                const expiredData = await expiredRes.json();
-                setExpired(expiredData);
-            } else {
-                console.error('Failed to fetch expired data:', expiredRes.status, expiredRes.statusText);
-            }
+            setExpiringSoon(expiringSoonRes.data);
+            setRecentlyAvailed(recentlyAvailedRes.data);
+            setExpired(expiredRes.data);
 
         } catch (err) {
             setError('Failed to fetch reports data');
@@ -193,23 +157,21 @@ export default function Reports({ onViewDetails }) {
                                             <td className="py-3 px-4">{niche.niche_type}</td>
                                             <td className="py-3 px-4 text-center">
                                                 <button
-                                                    onClick={() => {
+                                                    onClick={async () => {
                                                         // Find the holder data for this niche
-                                                        fetch(`http://localhost:8000/api/customers/list-all/`, {
-                                                            method: 'GET',
-                                                            headers: {
-                                                                'Content-Type': 'application/json',
-                                                                'Session-Token': sessionStorage.getItem('token'),
-                                                                'Authorization': `Session ${sessionStorage.getItem('token')}`
-                                                            },
-                                                            credentials: 'include',
-                                                        })
-                                                        .then(res => res.json())
-                                                        .then(data => {
-                                                            const holder = data.find(h => h.id === niche.holder);
+                                                        try {
+                                                            const response = await apiClient.get('/customers/list-all/', {
+                                                                headers: {
+                                                                    'Session-Token': sessionStorage.getItem('token'),
+                                                                    'Authorization': `Session ${sessionStorage.getItem('token')}`
+                                                                }
+                                                            });
+                                                            
+                                                            const holder = response.data.find(h => h.id === niche.holder);
                                                             if (holder) onViewDetails(holder);
-                                                        })
-                                                        .catch(console.error);
+                                                        } catch (error) {
+                                                            console.error('Error fetching holder:', error);
+                                                        }
                                                     }}
                                                     className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm"
                                                 >
