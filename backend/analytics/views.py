@@ -44,7 +44,42 @@ def get_analytics_data(request):
             'deceased_rate': deceased_rate
         }
         
-        # 2. Additional KPI Data
+        # 2. Niche Status Data (available, occupied, reserved, expired, full)
+        from django.utils import timezone
+        from django.db.models import Count
+        
+        total_niches = Niche.objects.count()
+        
+        # Count niches by status
+        niche_status_counts = Niche.objects.values('status').annotate(count=Count('status'))
+        
+        # Initialize all status counts
+        niche_status_data = {
+            'available': 0,
+            'occupied': 0,
+            'reserved': 0,
+            'expired': 0,
+            'full': 0,
+            'total': total_niches
+        }
+        
+        # Map the status values to our standardized keys
+        status_mapping = {
+            'Available': 'available',
+            'Occupied': 'occupied', 
+            'Reserved': 'reserved',
+            'Expired': 'expired',
+            'Full': 'full'
+        }
+        
+        # Update counts from database
+        for status_count in niche_status_counts:
+            db_status = status_count['status']
+            mapped_status = status_mapping.get(db_status, db_status.lower())
+            if mapped_status in niche_status_data:
+                niche_status_data[mapped_status] = status_count['count']
+        
+        # 3. Additional KPI Data
         # Count occupied niches (those with status 'Occupied' or 'Full')
         occupied_niches = Niche.objects.filter(status__in=['Occupied', 'Full']).count()
         
@@ -55,10 +90,12 @@ def get_analytics_data(request):
             'total_customers': total_holders,
             'occupied_niches': occupied_niches,
             'total_deceased': total_deceased,
+            'total_niches': total_niches,
         }
         
         return Response({
             'holder_status': holder_status_data,
+            'niche_status': niche_status_data,
             'kpi': kpi_data
         }, status=status.HTTP_200_OK)
         
