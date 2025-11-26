@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import apiClient from '../../axios/api';
 
 export default function NicheForm({ niche, holder, onSave, onCancel }) {
     // Parse existing niche location if editing
@@ -53,22 +54,20 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
 
         setCheckingDuplicate(true);
         try {
-            const response = await fetch('http://localhost:8000/api/niches/list-all/', {
+            const response = await apiClient.get('/niches/list-all/', {
                 headers: {
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'Session-Token': sessionStorage.getItem('token')
                 }
             });
 
-            if (response.ok) {
-                const niches = await response.json();
+            const niches = response.data;
                 const existingNiche = niches.find(n => n.location === location);
                 
-                if (existingNiche) {
-                    setDuplicateError(`A niche already exists at this location (ID: ${existingNiche.id})`);
-                } else {
-                    setDuplicateError('');
-                }
+            if (existingNiche) {
+                setDuplicateError(`A niche already exists at this location (ID: ${existingNiche.id})`);
+            } else {
+                setDuplicateError('');
             }
         } catch (error) {
             console.error('Error checking for duplicate:', error);
@@ -164,32 +163,27 @@ export default function NicheForm({ niche, holder, onSave, onCancel }) {
                 location: location
             };
 
-            const url = niche 
-                ? `http://localhost:8000/api/niches/edit/?niche_id=${niche.id}`
-                : 'http://localhost:8000/api/niches/create-new/';
+            const endpoint = niche 
+                ? `/niches/edit/?niche_id=${niche.id}`
+                : '/niches/create-new/';
             
-            const method = niche ? 'PUT' : 'POST';
-
-            const response = await fetch(url, {
-                method,
+            const config = {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'Session-Token': sessionStorage.getItem('token')
-                },
-                body: JSON.stringify(submitData)
-            });
+                }
+            };
 
-            if (response.ok) {
-                const result = await response.json();
-                onSave(result);
-            } else {
-                const errorData = await response.json();
-                setError(errorData.error || 'Failed to save niche');
-            }
+            const response = niche 
+                ? await apiClient.put(endpoint, submitData, config)
+                : await apiClient.post(endpoint, submitData, config);
+
+            const result = response.data;
+            onSave(result);
         } catch (error) {
             console.error('Error saving niche:', error);
-            setError('Network error occurred');
+            setError(error.response?.data?.error || error.message || 'Failed to save niche');
         } finally {
             setLoading(false);
         }
