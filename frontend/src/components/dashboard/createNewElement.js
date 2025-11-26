@@ -35,7 +35,12 @@ export default function CreateNewElement({ tab, onCreate, fields }) {
 
     const handleFileChange = (name, file) => {
         console.log('handleFileChange', name, file);
-        setFormData((prev) => ({ ...prev, [name]: file }));
+        // Only set the file if it's actually a File object, otherwise set to null
+        if (file && file instanceof File) {
+            setFormData((prev) => ({ ...prev, [name]: file }));
+        } else {
+            setFormData((prev) => ({ ...prev, [name]: null }));
+        }
     }
 
     const renderField = (f) => {
@@ -85,11 +90,36 @@ export default function CreateNewElement({ tab, onCreate, fields }) {
                     if (hasFiles) {
                         // Create FormData for file uploads
                         const form = new FormData();
+                        console.log('Creating FormData, formData keys and values:', Object.entries(formData));
                         Object.keys(formData).forEach(key => {
-                            if (formData[key] !== null && formData[key] !== undefined && formData[key] !== '') {
-                                form.append(key, formData[key]);
+                            const value = formData[key];
+                            const field = fields.find(f => f.name === key);
+                            
+                            console.log(`Processing key: ${key}, value type: ${typeof value}, isFile: ${value instanceof File}, field type: ${field?.type}`);
+                            
+                            if (value !== null && value !== undefined) {
+                                if (field?.type === 'file') {
+                                    // For file fields, only add if it's actually a File object
+                                    if (value instanceof File) {
+                                        console.log(`Adding file ${key}:`, value.name);
+                                        form.append(key, value);
+                                    } else {
+                                        console.log(`Skipping non-file value for file field ${key}:`, value);
+                                    }
+                                    // Skip empty file fields entirely
+                                } else {
+                                    // For non-file fields, add all values (including empty strings)
+                                    console.log(`Adding non-file field ${key}:`, value);
+                                    form.append(key, value);
+                                }
                             }
                         });
+                        
+                        console.log('FormData entries:');
+                        for (let [key, value] of form.entries()) {
+                            console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value);
+                        }
+                        
                         onCreate(form);
                     } else {
                         onCreate(formData);
