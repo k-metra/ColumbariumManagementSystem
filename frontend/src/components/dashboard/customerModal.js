@@ -4,6 +4,8 @@ import NicheForm from './NicheForm';
 import NicheAssignmentForm from './NicheAssignmentForm';
 import DeceasedForm from './DeceasedForm';
 
+import apiClient from '../../axios/api';
+
 export default function CustomerModal({ info, onClose }) {
     const [showImageModal, setShowImageModal] = useState(false);
     const [imageSrc, setImageSrc] = useState('');
@@ -23,27 +25,24 @@ export default function CustomerModal({ info, onClose }) {
         if (!info?.id) return;
         
         setLoading(true);
-        try {
-            const response = await fetch(`http://localhost:8000/api/niches/list-holder/?holder_id=${info.id}`, {
-                headers: {
-                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
-                    'Session-Token': sessionStorage.getItem('token')
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                setNiches(data);
-            } else {
-                console.error('Failed to fetch niches:', response.status);
-                setNiches([]);
+
+        apiClient.get(`/niches/list-holder/?holder_id=${info.id}`, {
+            headers: {
+                'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                'Session-Token': sessionStorage.getItem('token')
             }
-        } catch (error) {
-            console.error('Error fetching niches:', error);
+        })
+        .then(response => {
+            setNiches(response.data);
+        })
+        .catch(error => {
+            console.error('Failed to fetch niches:', error);
             setNiches([]);
-        } finally {
+        })
+        .finally(() => {
             setLoading(false);
-        }
+        });
+
     };
 
     useEffect(() => {
@@ -75,7 +74,10 @@ export default function CustomerModal({ info, onClose }) {
         if (!relativePath || relativePath === "Not Found") return null;
         if (relativePath.startsWith('http')) return relativePath;
         const cleanPath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
-        return `http://localhost:8000/${cleanPath}`;
+        const baseUrl = process.env.REACT_APP_ENVIRONMENT === 'local' 
+            ? 'http://localhost:8000' 
+            : 'https://mcj-parish.hopto.org';
+        return `${baseUrl}/${cleanPath}`;
     };
 
     const getFileType = (filePath) => {
@@ -165,14 +167,12 @@ export default function CustomerModal({ info, onClose }) {
         if (!window.confirm('Are you sure you want to delete this niche? This will also delete all deceased records in this niche.')) return;
         
         try {
-            const response = await fetch('http://localhost:8000/api/niches/delete/', {
-                method: 'DELETE',
+            const response = await apiClient.delete('/niches/delete/', {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'Session-Token': sessionStorage.getItem('token')
                 },
-                body: JSON.stringify({ element_ids: [nicheId] })
+                data: { element_ids: [nicheId] }
             });
             
             if (response.ok) {
@@ -202,14 +202,12 @@ export default function CustomerModal({ info, onClose }) {
         if (!window.confirm('Are you sure you want to delete this deceased record?')) return;
         
         try {
-            const response = await fetch('http://localhost:8000/api/niches/deceased/delete/', {
-                method: 'DELETE',
+            const response = await apiClient.delete('/niches/deceased/delete/', {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Session ${sessionStorage.getItem('token')}`,
                     'Session-Token': sessionStorage.getItem('token')
                 },
-                body: JSON.stringify({ element_ids: [deceasedId] })
+                data: { element_ids: [deceasedId] }
             });
             
             if (response.ok) {
