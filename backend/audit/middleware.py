@@ -67,8 +67,16 @@ class AuditMiddleware(MiddlewareMixin):
 
         print("User: ", user)
 
-        if path.startswith('/api/') and method in ['POST', 'PUT', 'DELETE'] and path != '/api/login-api/' and path != '/api/logout-api/':
-            if path == '/api/users/login-api/' or path == "/api/users/logout-api/": return response
+        # Only log API requests with modifying methods
+        if path.startswith('/api/') and method in ['POST', 'PUT', 'DELETE']:
+            
+            # Skip login and logout endpoints
+            if "login-api" in path or "logout-api" in path:
+                return response
+
+            # Only log successful responses (2xx)
+            if not (200 <= response.status_code < 300):
+                return response
 
             # Extract app/action from path
             parts = path.strip('/').split('/')
