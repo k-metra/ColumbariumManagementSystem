@@ -18,3 +18,7 @@ const productionClient = axios.create({
         'Authorization': `Session ${sessionStorage.getItem("session_token")}`
     }
 })
+
+export const apiClient = process.env.REACT_APP_ENVIRONMENT === 'local' ? localClient : productionClient;
+
+export default apiClient;
