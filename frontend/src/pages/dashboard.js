@@ -2,6 +2,7 @@ import Icon from "../components/icon";
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import apiClient from '../axios/api';
 import StatusTag from '../components/dashboard/statusTag';
 import TabContent from '../components/dashboard/tabContent';
 import { FaEdit, FaTrash } from 'react-icons/fa';
@@ -80,50 +81,36 @@ export default function DashboardPage() {
         console.log(endpoint, " fetching items.");
         try {
             const apiEndpoint = getEndpoint(endpoint);
-            await fetch (`http://localhost:8000/api/${apiEndpoint}/list-all/`, {
-                method: 'GET',
+            
+            const response = await apiClient.get(`/${apiEndpoint}/list-all/`, {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Session-Token': sessionStorage.getItem('token'),
-                    'Authorization': `Session ${sessionStorage.getItem('token')}`
-                },
-                credentials: 'include',
-            }).then(async response => {
-                if (!response.ok) {
-                    console.error(`Failed to fetch ${endpoint} items - Status:`, response.status, response.statusText);
-                    try {
-                        const errorData = await response.json();
-                        console.error(`Error response body:`, errorData);
-                    } catch (e) {
-                        console.error('Could not parse error response as JSON');
-                    }
-                    throw new Error("Failed to fetch items");
-                } else {
-                    return response.json();
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                    'Session-Token': sessionStorage.getItem('token')
                 }
-            }).then(data => {
-                const normalizeKey = (s) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+            });
+            
+            const data = response.data;
+            const normalizeKey = (s) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 
-                const normalizeObject = (obj) => {
-                    if (obj === null || obj === undefined) return obj;
-                    if (Array.isArray(obj)) return obj.map(normalizeObject);
-                    if (typeof obj !== 'object') return obj;
-                    const res = {};
-                    Object.keys(obj).forEach(k => {
-                        const newKey = normalizeKey(k);
-                        const val = obj[k];
-                        res[newKey] = normalizeObject(val);
-                    });
-                    
-                    return res;
-                }
+            const normalizeObject = (obj) => {
+                if (obj === null || obj === undefined) return obj;
+                if (Array.isArray(obj)) return obj.map(normalizeObject);
+                if (typeof obj !== 'object') return obj;
+                const res = {};
+                Object.keys(obj).forEach(k => {
+                    const newKey = normalizeKey(k);
+                    const val = obj[k];
+                    res[newKey] = normalizeObject(val);
+                });
+                
+                return res;
+            }
 
-                setTableLoading(false);
+            setTableLoading(false);
 
-                const normalized = Array.isArray(data) ? data.map(normalizeObject) : data;
-                setElements(normalized);
-                console.log("Fetched items (normalized): ", normalized);
-            })
+            const normalized = Array.isArray(data) ? data.map(normalizeObject) : data;
+            setElements(normalized);
+            console.log("Fetched items (normalized): ", normalized);
         } catch (Exception) {
             console.log("Error fetching items: ", Exception);
         }
@@ -131,21 +118,14 @@ export default function DashboardPage() {
 
     async function fetchExpiredNichesCount() {
         try {
-            const response = await fetch(`http://localhost:8000/api/customers/expired-count/`, {
-                method: "GET",
+            const response = await apiClient.get('/customers/expired-count/', {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Session-Token': sessionStorage.getItem('token'),
-                    'Authorization': `Session ${sessionStorage.getItem('token')}`
-                },
-                credentials: 'include',
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                    'Session-Token': sessionStorage.getItem('token')
+                }
             });
-            if (response.ok) {
-                const data = await response.json();
-                setExpiredNichesCount(data.count || 0);
-            } else {
-                console.error('Failed to fetch expired count:', response.status, response.statusText);
-            }
+            
+            setExpiredNichesCount(response.data.count || 0);
         } catch (error) {
             console.error("Error fetching expired niches count:", error);
         }
@@ -217,28 +197,17 @@ export default function DashboardPage() {
         if (confirmation) {
             try {
                 const apiEndpoint = getEndpoint(selectedTab);
-                const response = await fetch(`http://localhost:8000/api/${apiEndpoint}/delete/`, {
-                    method: 'DELETE',
+                const response = await apiClient.delete(`/${apiEndpoint}/delete/`, {
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Session-Token': sessionStorage.getItem('token'),
                         'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                        'Session-Token': sessionStorage.getItem('token')
                     },
-                    body: JSON.stringify({ element_ids: selectedElements }),
-                    credentials: 'include',
+                    data: { element_ids: selectedElements }
                 });
-
-                if (!response.ok) {
-                    console.error(`Failed to delete ${endpoint} items - Status:`, response.status, response.statusText);
-                    try {
-                        const errorData = await response.json();
-                        console.error(`Delete error response:`, errorData);
-                    } catch (e) {
-                        console.error('Could not parse delete error response as JSON');
-                    }
-                }
-            } catch (Exception) {
-                console.log("Error deleting items: ", Exception);
+                
+                console.log('Delete response:', response.data);
+            } catch (error) {
+                console.error("Error deleting items:", error);
             } finally {
                 setSelectedElements([]);
 
@@ -252,37 +221,38 @@ export default function DashboardPage() {
         setShowEditModal(false);
         if (data === null) return;
 
-        const endpoint = selectedTab.toLowerCase();
-
         try {
-            let headers = {
-                'Session-Token': sessionStorage.getItem('token'),
-                'Authorization': `Session ${sessionStorage.getItem('token')}`,
+            const apiEndpoint = getEndpoint(selectedTab);
+            const entityType = selectedTab === 'Holders' ? 'customer' : selectedTab === 'Niches' ? 'niche' : selectedTab.slice(0, -1).toLowerCase();
+            
+            let requestConfig = {
+                headers: {
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                    'Session-Token': sessionStorage.getItem('token')
+                }
             };
             
-            let body;
+            let requestData;
             
             if (data instanceof FormData) {
-                // For file uploads, don't set Content-Type, let browser set it with boundary
-                // Convert keys to snake_case for FormData while preserving file objects
+                // For file uploads, convert FormData keys to snake_case while preserving file objects
                 const newFormData = new FormData();
                 for (let [key, value] of data.entries()) {
                     const snakeKey = camelToSnake(key);
-                    // Preserve file objects as-is, convert other values
-                    if (value instanceof File) {
-                        newFormData.append(snakeKey, value);
-                    } else {
-                        newFormData.append(snakeKey, value);
-                    }
+                    newFormData.append(snakeKey, value);
                 }
-                body = newFormData;
+                requestData = newFormData;
+                // For FormData, we need to completely override the Content-Type
+                requestConfig.headers = {
+                    ...requestConfig.headers,
+                    'Content-Type': undefined, // Let axios set the proper multipart/form-data with boundary
+                };
             } else {
                 // Regular JSON request
-                headers['Content-Type'] = 'application/json';
                 const payload = convertKeysToSnake(data);
-                body = JSON.stringify(payload);
+                requestData = payload;
             }
-
+            
             console.log("Edit data type:", data instanceof FormData ? 'FormData' : 'JSON');
             if (data instanceof FormData) {
                 console.log("FormData entries:");
@@ -290,40 +260,19 @@ export default function DashboardPage() {
                     console.log(`${key}:`, value instanceof File ? `File: ${value.name}` : value);
                 }
             }
+            
+            const response = await apiClient.put(`/${apiEndpoint}/edit/?${entityType}_id=${elementToEdit.id}`, requestData, requestConfig);
 
-            const apiEndpoint = getEndpoint(selectedTab);
-            const entityType = selectedTab === 'Holders' ? 'customer' : selectedTab === 'Niches' ? 'niche' : endpoint.slice(0, -1).toLowerCase();
-            const response = await fetch(`http://localhost:8000/api/${apiEndpoint}/edit/?${entityType}_id=${elementToEdit.id}`, {
-                method: 'PUT',
-                headers,
-                body,
-                credentials: 'include',
-            });
+            console.log('Edit response:', response.data);
 
-            if (response.ok) {
-                const responseData = await response.json();
-                console.log(responseData);
-
-                // Update local state instead of refetching
-                setElements(prev => prev.map(element => 
-                    element.id === elementToEdit.id 
-                        ? { ...element, ...data } 
-                        : element
-                ));
-            } else {
-                console.error(`Failed to edit ${endpoint} item - Status:`, response.status, response.statusText);
-                try {
-                    const errorData = await response.json();
-                    console.error(`Edit error response:`, errorData);
-                } catch (e) {
-                    console.error('Could not parse edit error response as JSON');
-                }
-                console.log("Failed to edit item");
-                // On failure, still refetch to ensure data consistency
-                await fetchItems(selectedTab);
-            }
-        } catch (Exception) {
-            console.error("Error editing item:", Exception);
+            // Update local state instead of refetching
+            setElements(prev => prev.map(element => 
+                element.id === elementToEdit.id 
+                    ? { ...element, ...data } 
+                    : element
+            ));
+        } catch (error) {
+            console.error("Error editing item:", error);
             // On error, refetch to ensure data consistency
             await fetchItems(selectedTab);
         } finally {
@@ -339,38 +288,38 @@ export default function DashboardPage() {
         // cancel action (CreateNewElement calls onCreate(null) on cancel)
         console.log('handleCreate received data:', data);
         if (data === null) return;
-        const endpoint = selectedTab.toLowerCase();
+
         try {
-            let headers = {
-                'Session-Token': sessionStorage.getItem('token'),
-                'Authorization': `Session ${sessionStorage.getItem('token')}`,
+            let requestConfig = {
+                headers: {
+                    'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                    'Session-Token': sessionStorage.getItem('token')
+                }
             };
             
-            let body;
+            let requestData;
             
             if (data instanceof FormData) {
-                // For file uploads, don't set Content-Type, let browser set it with boundary
-                // Convert keys to snake_case for FormData while preserving file objects
+                // For file uploads, convert FormData keys to snake_case while preserving file objects
                 const newFormData = new FormData();
                 for (let [key, value] of data.entries()) {
                     const snakeKey = camelToSnake(key);
-                    // Preserve file objects as-is, convert other values
-                    if (value instanceof File) {
-                        newFormData.append(snakeKey, value);
-                    } else {
-                        newFormData.append(snakeKey, value);
-                    }
+                    newFormData.append(snakeKey, value);
                 }
-                body = newFormData;
+                requestData = newFormData;
+                // For FormData, we need to completely override the Content-Type
+                requestConfig.headers = {
+                    ...requestConfig.headers,
+                    'Content-Type': undefined, // Let axios set the proper multipart/form-data with boundary
+                };
             } else {
                 // Regular JSON request
-                headers['Content-Type'] = 'application/json';
                 const safeData = data || {};
                 const payload = convertKeysToSnake(safeData);
-                body = JSON.stringify(payload);
+                requestData = payload;
             }
 
-            console.log('Creating', endpoint, 'data type:', data instanceof FormData ? 'FormData' : 'JSON');
+            console.log('Creating', selectedTab, 'data type:', data instanceof FormData ? 'FormData' : 'JSON');
             if (data instanceof FormData) {
                 console.log("FormData entries:");
                 for (let [key, value] of data.entries()) {
@@ -379,33 +328,14 @@ export default function DashboardPage() {
             }
 
             const apiEndpoint = getEndpoint(selectedTab);
-            await fetch("http://localhost:8000/api/" + apiEndpoint + "/create-new/", {
-                method: 'POST',
-                headers,
-                body,
-                credentials: 'include',
-            }).then(async response => {
-                if (!response.ok) {
-                    console.error(`Failed to create ${endpoint} item - Status:`, response.status, response.statusText);
-                    try {
-                        const errorData = await response.json();
-                        console.error(`Create error response:`, errorData);
-                    } catch (e) {
-                        console.error('Could not parse create error response as JSON');
-                    }
-                    throw new Error("Failed to create item");
-                }
-
-                return response.json();
-            }).then(data => {
-                console.log(data);
-            })
+            const response = await apiClient.post(`/${apiEndpoint}/create-new/`, requestData, requestConfig);
+            
+            console.log('Create response:', response.data);
 
             await fetchItems(selectedTab);
         } catch (error) {
-            console.error("Error creating item: ", error);
+            console.error("Error creating item:", error);
         }
-        
     }
 
     useEffect(() => {
@@ -443,21 +373,15 @@ export default function DashboardPage() {
             if (selectedTab === 'Holders' && searchFilter === 'deceased') {
                 // Search by deceased - make API call to find holders with deceased matching the query
                 try {
-                    const response = await fetch(`http://localhost:8000/api/customers/search-by-deceased/?query=${encodeURIComponent(filter)}`, {
-                        method: 'GET',
+                    const response = await apiClient.get(`/customers/search-by-deceased/?query=${encodeURIComponent(filter)}`, {
                         headers: {
-                            'Content-Type': 'application/json',
-                            'Session-Token': sessionStorage.getItem('token'),
-                            'Authorization': `Session ${sessionStorage.getItem('token')}`
-                        },
-                        credentials: 'include',
+                            'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                            'Session-Token': sessionStorage.getItem('token')
+                        }
                     });
-
-                    if (response.ok) {
-                        const deceasedSearchResults = await response.json();
-                        setFilteredData(deceasedSearchResults);
-                        return;
-                    }
+                    
+                    setFilteredData(response.data);
+                    return;
                 } catch (error) {
                     console.error('Deceased search failed:', error);
                 }
@@ -466,21 +390,15 @@ export default function DashboardPage() {
             if (selectedTab === 'Holders' && searchFilter === 'refno') {
                 // Search by reference number - make API call to find holders by niche reference number
                 try {
-                    const response = await fetch(`http://localhost:8000/api/customers/search-by-refno/?query=${encodeURIComponent(filter)}`, {
-                        method: 'GET',
+                    const response = await apiClient.get(`/customers/search-by-refno/?query=${encodeURIComponent(filter)}`, {
                         headers: {
-                            'Content-Type': 'application/json',
-                            'Session-Token': sessionStorage.getItem('token'),
-                            'Authorization': `Session ${sessionStorage.getItem('token')}`
-                        },
-                        credentials: 'include',
+                            'Authorization': `Session ${sessionStorage.getItem('token')}`,
+                            'Session-Token': sessionStorage.getItem('token')
+                        }
                     });
-
-                    if (response.ok) {
-                        const refNoSearchResults = await response.json();
-                        setFilteredData(refNoSearchResults);
-                        return;
-                    }
+                    
+                    setFilteredData(response.data);
+                    return;
                 } catch (error) {
                     console.error('Reference number search failed:', error);
                 }
