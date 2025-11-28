@@ -128,12 +128,27 @@ class Niche(models.Model):
         
         # Handle holder assignment changes
         old_holder = None
+        clear_deceased = False
+        
         if self.pk:
             try:
                 old_instance = Niche.objects.get(pk=self.pk)
                 old_holder = old_instance.holder
+                
+                # Check if we need to clear deceased records
+                if not self.holder and old_holder:
+                    # Holder removed - mark for clearing
+                    clear_deceased = True
+                elif self.holder and old_holder and self.holder != old_holder:
+                    # Holder changed - mark for clearing
+                    clear_deceased = True
+                    
             except Niche.DoesNotExist:
                 pass
+        
+        # Clear deceased records BEFORE saving if needed
+        if clear_deceased and self.pk:
+            self.deceased_records.all().delete()
         
         # Validate niche limit per holder (only if holder is assigned)
         if not self.pk and self.holder:  # Only check on creation and if holder exists
@@ -150,6 +165,10 @@ class Niche(models.Model):
             # Holder removed - clear dates
             self.date_of_availment = None
             self.date_of_expiry = None
+        elif self.holder and old_holder and self.holder != old_holder:
+            # Holder changed (different holder assigned)
+            # Set new availment date for the new holder
+            self.date_of_availment = timezone.now()
         
         if not self.pk:
             # For new instances, set status to Available
